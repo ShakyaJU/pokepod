@@ -3,7 +3,7 @@
 <!--<h1>PokéPod</h1>-->
 
 <p align="center">
-  <img src="assets/branding/pokepod_splash_text.png" alt="PokéPod" width="100%">
+  <img src="assets/branding/pokepod_splash_text.png" alt="PokéPod" width="500">
 </p>
 
 <h3>Beyond the Pokédex.</h3>
