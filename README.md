@@ -4,7 +4,7 @@
 
 <h3>Beyond the Pokédex.</h3>
 
-<p>An unofficial Pokémon research game and discovery companion built with Flutter.</p>
+<p>An unofficial Pokémon research challenge and discovery companion built with Flutter.</p>
 
 <p>
 <img src="https://img.shields.io/badge/Flutter-3.47.4-02569B?logo=flutter&logoColor=white" alt="Flutter 3.47.4">
