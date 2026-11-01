@@ -13,7 +13,7 @@
 <p>
 <img src="https://img.shields.io/badge/Flutter-3.47.4-02569B?logo=flutter&logoColor=white" alt="Flutter 3.47.4">
 <img src="https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white" alt="Dart 3.10">
-<img src="https://img.shields.io/badge/State-Riverpod-2DD4A0" alt="State management: Riverpod">
+<img src="https://img.shields.io/badge/State-Riverpod-0891B2" alt="State management: Riverpod">
 <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Android">
 <img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
 <img src="https://img.shields.io/badge/Storage-Local--first-5EEAF2" alt="Local-first storage">
