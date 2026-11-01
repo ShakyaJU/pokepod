@@ -327,7 +327,7 @@ The platform folders for iOS, web and desktop exist but are untested. Re-run the
 
 ## License
 
-PokéPod's original source code is released under the [MIT License](./LICENSE .).
+PokéPod's original source code is released under the [MIT License](./LICENSE).
 
 This license applies to the original code authored for this project. Pokémon-related names, characters, artwork, trademarks, and other third-party materials remain the property of their respective owners and are not covered by this license. Third-party dependencies and assets remain subject to their respective licenses and usage terms.
 
