@@ -325,7 +325,11 @@ The platform folders for iOS, web and desktop exist but are untested. Re-run the
 - **The PokéPod wordmark** was supplied by the author.
 - **Packages and licences:** full provenance, package licences and redistribution notes are in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). In the app, **About → Open-source licences** lists every package licence.
 
-**Licence:** this repository currently has no open-source licence file, so no permission to use, modify or redistribute the code is granted until the author adds one.
+## License
+
+PokéPod's original source code is released under the [MIT License](./LICENSE).
+
+This license applies to the original code authored for this project. Pokémon-related names, characters, artwork, trademarks, and other third-party materials remain the property of their respective owners and are not covered by this license. Third-party dependencies and assets remain subject to their respective licenses and usage terms.
 
 > **Disclaimer:** PokéPod is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, The Pokémon Company or Game Freak. Pokémon and related names, characters and artwork are trademarks and copyrights of their respective owners. This repository does not claim ownership of any Pokémon intellectual property.
 
