@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Shows today\'s Specimen of the Day from PokéPod.</string>
+</resources>

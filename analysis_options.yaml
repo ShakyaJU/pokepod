@@ -1,0 +1,20 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    avoid_print: true
+    # Style-only lints that would flag hundreds of harmless spots in widget trees.
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    prefer_const_constructors_in_immutables: false

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_brand">PokéPod</string>
+    <string name="widget_label">SPECIMEN OF THE DAY</string>
+    <string name="widget_hint">Tap to open in PokéPod</string>
+    <string name="widget_height_label">HEIGHT</string>
+    <string name="widget_weight_label">WEIGHT</string>
+</resources>

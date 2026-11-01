@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Placeholder shown when the specimen's artwork is not cached yet. -->
+    <path
+        android:fillColor="#FF2A3541"
+        android:fillType="evenOdd"
+        android:pathData="M12,3.2a8.8,8.8 0 1,0 0,17.6a8.8,8.8 0 1,0 0,-17.6zM12,5.2a6.8,6.8 0 1,1 0,13.6a6.8,6.8 0 1,1 0,-13.6z" />
+    <path
+        android:fillColor="#FF2A3541"
+        android:pathData="M3.4,11.2h6.4v1.6h-6.4z M14.2,11.2h6.4v1.6h-6.4z" />
+    <path
+        android:fillColor="#FF2A3541"
+        android:pathData="M12,9.6a2.4,2.4 0 1,0 0,4.8a2.4,2.4 0 1,0 0,-4.8z" />
+</vector>

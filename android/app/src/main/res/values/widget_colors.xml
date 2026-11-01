@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PokéPod dark surfaces and brand accent, mirrored for the widgets. -->
+    <color name="widget_background">#FF0F161C</color>
+    <color name="widget_background_edge">#FF1A232D</color>
+    <color name="widget_text">#FFE8EEF2</color>
+    <color name="widget_dim">#FF8A97A3</color>
+    <color name="widget_accent">#FF2DD4A0</color>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded mask for a type badge. The provider paints the type's own tint
+     over it as the text view's background, and the container clips that fill
+     to this outline (clipToOutline), so a badge keeps its corners while
+     carrying whatever colour the app's palette says it should. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FF10161C" />
+    <corners android:radius="8dp" />
+</shape>

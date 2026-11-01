@@ -1,0 +1,111 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Local-only configuration and credentials
+android/local.properties
+android/key.properties
+.vscode/settings.json
+
+# Environment and secrets (keep templates tracked with `!` exceptions)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Android signing keys and certificates — never commit these
+*.jks
+*.keystore
+*.jceks
+*.p12
+*.pfx
+*.der
+*.cer
+*.pem
+*.pepk
+upload-keystore*
+*-keystore.*
+key.properties.*
+
+# Service-account / platform credentials (defensive: none are used today)
+google-services.json
+GoogleService-Info.plist
+*service-account*.json
+*service_account*.json
+*.p8
+
+# Android build caches and intermediates (outside /build)
+**/android/.gradle/
+**/android/captures/
+**/android/.cxx/
+**/.cxx/
+*.hprof
+
+# Local databases, backups and patch leftovers
+*.db
+*.sqlite
+*.sqlite3
+*.backup
+*.bak
+*.orig
+*.rej
+backups/
+
+# Coverage and profiling output
+coverage/
+
+# Temporary and OS files
+*.tmp
+*.temp
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Flutter version manager (not used, ignored defensively)
+.fvm/
+
+# Duplicate local project snapshot (superseded working copy, kept on disk only)
+pokepod/
