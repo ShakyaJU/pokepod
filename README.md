@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Android-first-3DDC84?logo=android&logoColor=white" alt="Android first">
   <img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
   <img src="https://img.shields.io/badge/Local--first-no%20account-5EEAF2" alt="Local-first, no account">
-  <img src="https://img.shields.io/badge/Unofficial-fan%20project-F5B642" alt="Unofficial fan project">
+  <img src="https://img.shields.io/badge/Unofficial-fan%20project-D4A017" alt="Unofficial fan project">
 </p>
 
 <p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 327 tests</b></p>
