@@ -1,66 +1,157 @@
 <div align="center">
 
-<img src="assets/branding/pokepod_icon_1024.png" width="120" alt="PokéPod icon" />
+<h1>PokéPod</h1>
 
-# PokéPod
+<h3>Beyond the Pokédex.</h3>
 
-**An unofficial Pokémon research and discovery companion built with Flutter.**
+<p>An unofficial Pokémon research and discovery companion built with Flutter.</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Flutter-3.47.4-02569B?logo=flutter&logoColor=white" alt="Flutter 3.47.4">
+  <img src="https://img.shields.io/badge/Dart-%5E3.10-0175C2?logo=dart&logoColor=white" alt="Dart ^3.10">
+  <img src="https://img.shields.io/badge/State-Riverpod-2DD4A0" alt="Riverpod">
+  <img src="https://img.shields.io/badge/Android-first-3DDC84?logo=android&logoColor=white" alt="Android first">
+  <img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
+  <img src="https://img.shields.io/badge/Local--first-no%20account-5EEAF2" alt="Local-first, no account">
+  <img src="https://img.shields.io/badge/Unofficial-fan%20project-F5B642" alt="Unofficial fan project">
+</p>
+
+<p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 327 tests</b></p>
 
 </div>
 
-PokéPod treats the Pokédex as a research instrument rather than a list. You browse the
-national dex (species 1–1025), open research dossiers, log what you have discovered, studied
-and mastered, compare specimens, build teams, and solve a daily mystery, all stored locally on
-your device with no account.
+<!-- ============================================================================
+     PRIMARY OVERVIEW IMAGE: REPLACE THE PLACEHOLDER BELOW
+     1. Upload the compiled overview PNG through GitHub (for example, drag it into
+        the README editor or an issue comment).
+     2. Replace YOUR_GITHUB_IMAGE_URL with the URL GitHub gives you.
+     ============================================================================ -->
+<p align="center">
+  <img src="App screenshot compilation.png" alt="PokéPod — Complete Application Overview" width="100%">
+</p>
 
-> **Status:** verified on Flutter 3.47.4 — `flutter analyze` is clean, all 327 tests pass, and
-> both the debug and release Android APKs build successfully. iOS, web, macOS, Linux and Windows
-> targets have not been built. See [Verification status](#verification-status).
+PokéPod treats the Pokédex as a **research instrument** rather than a list. You browse the National Pokédex, open research dossiers, record what you have discovered, studied and mastered, compare specimens, build teams, organise collections and play a daily "Who's That Pokémon?" challenge.
+
+Everything you create is stored **locally on your device**. There is no account to create and no custom backend.
+
+---
+
+## Contents
+
+- [Features](#features)
+- [Technical architecture](#technical-architecture)
+- [Data, caching and offline behavior](#data-caching-and-offline-behavior)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Privacy and data ownership](#privacy-and-data-ownership)
+- [Verification and status](#verification-and-status)
+- [Known limitations](#known-limitations)
+- [Credits and disclaimer](#credits-and-disclaimer)
+
+---
 
 ## Features
 
-| Area | What it does |
-| --- | --- |
-| **Discover** | Greeting, specimen of the day, Mystery Specimen card with streak, research progress ring, recently viewed, explainable "Unexpected connections", next milestones. Works for a brand-new user with no data. |
-| **Pokédex** | Search by name or number, grid and compact list, sort, type filter, generation filter, favourites filter, combined filters, result counts, clear-filters, incremental loading (30 at a time), loading skeletons, empty and error states with retry, optional Living Dex silhouettes for undiscovered entries. |
-| **Dossier** | Official artwork (and shiny artwork), types, measurements, base stats with total, abilities (hidden marked), a sample of moves, English species description, evolution preview, research stage controls, personal notes, add to collection, compare, pin to showcase. |
-| **Evolution Constellation** | Pannable, zoomable graph generated from PokéAPI evolution-chain data: branches, multi-stage chains, readable evolution conditions, selected-node highlight, tap to open. |
-| **Pokémon DNA** | Two-specimen comparison: stat bars and differences, totals, types, abilities, defensive weaknesses/resistances/immunities, and deterministic text derived from the data. It does not claim base stats predict battles. |
-| **Team Architect** | Teams of up to six (create, rename, duplicate, delete, persist), defensive matrix (weak/resist/immune counts), STAB-based offensive coverage, and explainable suggestions. |
-| **Mystery Specimen** | One deterministic Pokémon per local calendar day, six progressive clues, searchable guess picker, six-guess limit, reveal animation, collapsible paginated history, current and best streak, all persisted. |
-| **Collections** | Custom collections, showcase (reorderable), pinned favourites, Living Dex progress by generation, optional progress by type, recent research. |
-| **Profile** | Nickname, avatar (any Pokémon), accent colour, theme mode, research/mystery stats, saved teams, rule-based achievements, journal of notes, import of old favourites. |
-| **Achievements** | 20 achievements across 9 rarity tiers (Common through Hyper Rare), unlocked from real research and gameplay progress, shown with tier badges and progress bars. |
-| **Notifications** | Opt-in daily reminder notifications, scheduled in the device's local timezone, with an in-app permission onboarding flow. |
-| **Home-screen widgets** | Android widgets in four launcher sizes (compact, small, medium, large) showing the same Specimen of the Day as the app, with progressive detail (art, types, Pokédex text, height/weight) and type-coloured badges. |
-| **Sound** | Optional sound effects for the daily game and splash, mutable from Settings. |
+### Discover
 
-## Tech stack
+A dashboard that works for a brand-new user and for an experienced one.
 
-* Flutter / Dart (SDK constraint `^3.10.0`)
-* [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) for state management and dependency injection
-* [dio](https://pub.dev/packages/dio) for networking (timeouts, retries, cancellation)
-* [shared_preferences](https://pub.dev/packages/shared_preferences) for all local persistence
-* [cached_network_image](https://pub.dev/packages/cached_network_image) for artwork caching
-* [audioplayers](https://pub.dev/packages/audioplayers) for the optional sound effects
-* [home_widget](https://pub.dev/packages/home_widget) for the Android home-screen widgets
-* [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) and
-  [flutter_timezone](https://pub.dev/packages/flutter_timezone) for daily reminder notifications
+- **Specimen of the Day**, shared with the home-screen widgets.
+- **Who's That Pokémon?** card with today's status and a separate streak panel.
+- **Research progress** ring, recently viewed Pokémon and upcoming milestones.
+- **Unexpected Connections**: relationships between Pokémon, each with an explanation based on real data (shared abilities, similar stat shapes, similar totals with different strengths, shared evolution families).
 
-GetIt from the old app was dropped on purpose: Riverpod already covers dependency injection, and
-having both added no value. Navigation uses a swipeable `PageView` shell driven by a bottom
-`NavigationBar`; deeper routes are plain `Navigator` pushes, and the app has few enough of them
-that a router package was not justified.
+### Pokédex
 
-## Architecture
+- The **National Pokédex, species 1–1025**, loaded incrementally (30 at a time).
+- Search by **name or number**; filters for **type**, **generation** and **favourites**, which can be combined and cleared in one tap.
+- A dedicated **Sort by** sheet, separate from the filters, with direction that adapts to the property: Pokédex number, name, generation, type, Legendary & Mythical, favourites, height, weight and base stats.
+- Grid and compact list layouts, loading skeletons, empty states and retry on failure.
+- Optional **Living Dex** silhouettes for Pokémon you have not discovered yet.
 
+### Research dossiers
+
+Each Pokémon opens a full dossier:
+
+- Official and **shiny** artwork, types, height and weight.
+- **Base stats** with totals, abilities (hidden abilities marked), a sample of moves and the English species description.
+- An **evolution preview** that opens the Evolution Constellation.
+- A **research log** (Unseen → Discovered → Studied → Mastered), **personal notes**, add to a collection, compare, and pin to your showcase.
+
+Opening a dossier marks a Pokémon as *Discovered*. *Studied* and *Mastered* are always explicit choices, one step at a time.
+
+### Evolution Constellation
+
+An interactive, pannable and zoomable graph generated from PokéAPI evolution-chain data. It handles branching families (such as Eevee) and multi-stage chains, labels each link with readable evolution conditions, highlights the selected Pokémon and opens any node's dossier on tap.
+
+### Pokémon DNA
+
+A two-specimen comparison: stat bars with differences, totals, types, abilities and a defensive profile (weaknesses, resistances, immunities). The written analysis is generated from the data and never claims that base stats predict a battle.
+
+### Team Architect
+
+Teams of up to six Pokémon that you can create, rename, duplicate and delete. The analysis shows a defensive matrix (weak, resist and immune counts per attacking type), offensive coverage and explainable suggestions for gaps.
+
+### Who's That Pokémon?
+
+A daily guessing game with one Pokémon per local calendar day.
+
+- **Six guesses**, a searchable guess picker and **progressive clues** (generation, type, size and stat total, a description with the name hidden, the name length and first letter).
+- A **progressive visual reveal**: the artwork starts as a "?" and becomes a blurred silhouette, then a sharper one, then muted color as you guess wrongly.
+- A clear **win** or **game over** state that reveals the answer, locks the day and cannot be replayed after a restart.
+- **Current and best streak**, games played, win rate and a collapsible result history, all persisted.
+
+### Collections
+
+Custom collections, a reorderable showcase, pinned favourites, **Generation Dex Progress** (pick a generation to see how much of it you have discovered), research progress by type and recent research.
+
+### Trainer profile
+
+Nickname and avatar (any Pokémon), a selectable **Accent Color**, System/Dark/Light theme, research statistics, an achievements preview, a **research journal** of your notes and saved teams. A side menu leads to Achievements, Research Journal, Settings, Help & User Guide and About.
+
+### Achievements
+
+**20 achievements** unlocked from real research and gameplay progress, each with a progress bar and a rarity tier. There are **nine tiers**:
+
+`Common` · `Uncommon` · `Rare` · `Epic` · `Double Rare` · `Ultra Rare` · `Illustration Rare` · `Special Illustration Rare` · `Hyper Rare`
+
+### Android home-screen widgets
+
+Four launcher sizes (**compact, small, medium and large**) show the same Specimen of the Day as the app. Larger sizes progressively add more: artwork, name and number, then type badges, the Pokédex description and height and weight.
+
+### Notifications and sound
+
+- **Opt-in local reminders**: a daily reminder and a Who's That Pokémon? streak reminder, scheduled in the device's local time zone and introduced by an in-app explanation before any system permission prompt. No push service is involved.
+- Short **sound effects** for the splash screen and the daily game; they can be turned off in Settings.
+
+### Help, backup and restore
+
+A searchable, collapsible **Help & User Guide** covers every feature. **Back up progress** copies a versioned backup of your progress to the clipboard as text, and **Restore from backup** validates it, shows what it contains and asks for confirmation before replacing anything.
+
+---
+
+## Technical architecture
+
+PokéPod is organised by feature, with the rules of the app kept in plain Dart that does not depend on Flutter widgets.
+
+```mermaid
+flowchart LR
+    UI["features/<br/>screens and widgets"] --> P["Riverpod providers<br/>and notifiers"]
+    P --> D["domain/<br/>pure Dart rules"]
+    P --> R["PokeApiRepository<br/>cache-first"]
+    R --> C["ApiClient (Dio)"]
+    C --> API[("PokéAPI")]
+    R --> S[("SharedPreferences<br/>JSON cache")]
+    P --> S
 ```
+
+```text
 lib/
   main.dart                    entry point, loads SharedPreferences
   app/
     app.dart                   MaterialApp, theme wiring, launch splash
     shell.dart                 five-tab shell, back-to-Discover behaviour
-    theme/                     design tokens (colour, spacing, radii, motion) and ThemeData
+    theme/                     design tokens (color, spacing, radii, motion) and ThemeData
     design_system/widgets.dart Panel, TypeChip, StatBar, PokemonArtwork, skeletons, states
   core/
     errors/ networking/ storage/ utils/
@@ -76,179 +167,215 @@ lib/
 test/                          unit and widget tests (no network; PokéAPI is faked)
 ```
 
-Business logic lives in `domain/` and in notifiers; widgets only render state.
+### Engineering decisions
 
-### Data and offline behaviour
+- **Riverpod for state and dependency injection.** One mechanism provides state, the repository and the HTTP client, and tests override any of them. GetIt from the original app was dropped because Riverpod already covered it.
+- **A repository layer between the UI and the network.** Screens never see HTTP. `PokeApiRepository` is cache-first, de-duplicates identical in-flight requests and depends only on a small `ApiClient` interface, so tests swap in a fake client.
+- **Defensive models.** PokéAPI models are hand-written and tolerate missing or malformed fields. A bad response becomes a typed error, not a crash.
+- **Domain logic separate from widgets.** The type chart, team analysis, research-stage rules, filtering and sorting, evolution layout, achievements and the daily challenge are pure Dart and are tested without any UI.
+- **Navigation.** A swipeable `PageView` shell is driven by a single selected-tab value shared by the bottom bar, swipes and in-app shortcuts. Deeper screens use plain `Navigator` pushes, because there are few enough of them that a router package was not justified.
+- **Persistence.** All user data is stored as JSON in `shared_preferences`, loaded before the app starts so notifiers can read it synchronously.
 
-* **Source:** [PokéAPI](https://pokeapi.co). Artwork comes from the
-  [PokeAPI sprites](https://github.com/PokeAPI/sprites) repository.
-* **Catalogue:** one request (`/pokemon?limit=1025`) provides every name and id; artwork URLs are
-  derived from the id, so the grid needs no per-tile requests.
-* **Details, species, evolution chains and type lists** are fetched on demand, cached in memory
-  and persisted on disk in a compact format. Cached entries are served without a network request,
-  so anything you have opened before works offline.
-* **Never fabricated:** if a request fails and nothing is cached, the UI shows an error with a
-  retry action. An "offline" banner appears only after a request has actually failed.
-* PokéAPI is a free community service; please be considerate. This app makes small, cached requests.
+### Testing
 
-### Type chart and ruleset
+The suite covers model parsing (including malformed data), repository caching and error handling with a fake API client, filtering, sorting and pagination, persistence round-trips, the type chart and team analysis, evolution layout, the daily selection, streak rules, backup validation and widget tests for navigation and key screens.
 
-`lib/domain/type_chart.dart` implements the 18-type chart used since Generation VI (Fairy
-included). Dual-type multipliers multiply (0, ¼, ½, 1, 2, 4). Team offensive coverage assumes each
-member uses moves of its own types (STAB) because movesets are not tracked. There is **no battle
-simulation**.
+---
 
-### Mystery Specimen determinism
+## Data, caching and offline behavior
 
-The answer for a day is `mysteryAnswerId(dateKey)`, a deterministic rolling hash of the day's
-date key that is exact on every platform including web, so the same date gives the same Pokémon
-on every device and after every restart. The date key is the device's **local** calendar day: the
-mystery rolls over at local midnight (re-read on app resume and by a timer while the app stays
-open), not at UTC midnight. A day that is already completed ignores further guesses, and repeated
-guesses are ignored, so streaks cannot be corrupted by duplicate submissions. Older records
-saved by a previous selection method are migrated rather than re-rolled. Clues need the answer's
-data; if it has never been cached and you are offline, the game shows an unavailable state with
-retry.
+- **Source:** [PokéAPI](https://pokeapi.co). Artwork comes from the [PokeAPI sprites](https://github.com/PokeAPI/sprites) repository.
+- **Catalogue:** one request returns every name and number. Artwork URLs are derived from the number, so the grid needs no per-tile requests.
+- **On demand:** details, species text, evolution chains and type lists are fetched when needed, then cached in memory and persisted on disk in a compact format.
+- **Offline:** anything you have opened before is served from the cache without a network request. The first time you open something, a connection is required. An "offline" banner appears only after a request has actually failed, and failures show a retry action. Nothing is ever fabricated.
+- **Artwork** is cached by the image cache once loaded; artwork you have never loaded cannot appear offline.
+
+### Daily challenge selection
+
+The answer for a day is derived deterministically from the **device's local calendar date**. The full National Dex is shuffled with a date-seeded generator, and each day takes the next position in the shuffle. Over a 1,025-day cycle every species appears exactly once, with no link between consecutive days, generations or types. The day rolls over at local midnight, including while the app stays open and when it returns from the background.
+
+The answer is saved the first time a day is opened, so it cannot change. A finished day cannot be replayed, and guesses that are duplicate or invalid are ignored. The game never reopens a day earlier than the latest one played. Because PokéPod has no server, moving the device clock *forward* cannot be prevented.
+
+### Type chart and team analysis
+
+`lib/domain/type_chart.dart` implements the 18-type chart used since Generation VI, with dual-type multipliers (0, ¼, ½, 1, 2, 4). Team offensive coverage is **STAB-based**: it assumes each Pokémon uses moves of its own types, because movesets are not tracked. PokéPod does not simulate battles.
+
+---
+
+## Tech stack
+
+<p>
+  <img src="https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Riverpod-2DD4A0" alt="Riverpod">
+  <img src="https://img.shields.io/badge/Dio-networking-5C6BC0" alt="Dio">
+  <img src="https://img.shields.io/badge/shared__preferences-persistence-455A64" alt="shared_preferences">
+  <img src="https://img.shields.io/badge/cached__network__image-artwork%20cache-607D8B" alt="cached_network_image">
+  <img src="https://img.shields.io/badge/audioplayers-sound-8E24AA" alt="audioplayers">
+  <img src="https://img.shields.io/badge/home__widget-Android%20widgets-3DDC84?logo=android&logoColor=white" alt="home_widget">
+  <img src="https://img.shields.io/badge/flutter__local__notifications-reminders-F57C00" alt="flutter_local_notifications">
+  <img src="https://img.shields.io/badge/flutter__timezone-local%20time%20zone-0097A7" alt="flutter_timezone">
+  <img src="https://img.shields.io/badge/Pok%C3%A9API-data-EF5350" alt="PokéAPI">
+</p>
+
+| Package | Used for |
+| --- | --- |
+| `flutter_riverpod` | State management and dependency injection |
+| `dio` | HTTP with timeouts, retries and cancellation |
+| `shared_preferences` | All local persistence |
+| `cached_network_image` | Artwork caching |
+| `audioplayers` | Sound effects |
+| `home_widget` | Android home-screen widgets |
+| `flutter_local_notifications`, `flutter_timezone` | Daily reminders in the local time zone |
+
+---
 
 ## Getting started
 
 ### Prerequisites
 
-* [Flutter](https://docs.flutter.dev/get-started/install) with a Dart SDK satisfying `^3.10.0`
-  (PokéPod was verified on Flutter 3.47.4)
-* Android: Android Studio or the Android SDK command-line tools, and an emulator or device
-* iOS builds additionally require macOS and Xcode
+- **Flutter** with a Dart SDK satisfying `^3.10.0` (verified on Flutter 3.47.4)
+- **Android Studio** or the Android SDK command-line tools, and an Android emulator or device
+- An Android device or emulator is required for the home-screen widgets and notifications
 
 ### Run it
 
-Run these from the directory that contains `pubspec.yaml`:
-
 ```bash
+git clone <your-repository-url>
+cd pokepod
 flutter pub get
-dart format .
-flutter analyze
-flutter test
 flutter run
 ```
 
-`pubspec.lock` is committed so that dependency resolution is reproducible. Run
-`flutter pub upgrade` deliberately when you want newer versions, not as part of a fresh clone.
+Run these from the directory that contains `pubspec.yaml`. `pubspec.lock` is committed so dependency resolution is reproducible.
 
-### Build
+### Check it
 
 ```bash
-flutter build apk --debug      # Android debug APK
-flutter build apk --release    # Android release APK (see signing note)
-flutter build appbundle        # Play Store bundle
-flutter build ios              # macOS only
-flutter build web
+dart format .
+flutter analyze
+flutter test
 ```
 
-**Signing:** release builds in `android/app/build.gradle.kts` still use the debug signing config
-inherited from the Flutter template. Create your own keystore and signing config before
-publishing. Never commit keystores or `key.properties` (they are in `.gitignore`).
+### Build an Android APK
 
-### Application identifiers
+```bash
+flutter build apk --debug
+flutter build apk --release
+```
 
-| Platform | Identifier |
+> **Signing:** release builds still use the debug signing configuration inherited from the Flutter template. Create your own keystore and signing config before publishing. Never commit keystores or `key.properties`.
+
+### Android notes
+
+- **Widgets:** long-press the home screen, open *Widgets*, and choose PokéPod. Four sizes are available.
+- **Notifications:** reminders are opt-in. PokéPod explains the purpose in the app before asking Android for notification permission, and you can change your choice later in Settings.
+
+---
+
+## Privacy and data ownership
+
+PokéPod is local-first.
+
+- **No accounts**, no custom backend, and no analytics or advertising.
+- Research progress, favourites, collections, teams, notes, profile and daily-challenge history are stored **only on your device**.
+- **What leaves the device:** requests to PokéAPI for Pokémon data and requests to the GitHub-hosted sprites repository for artwork. These are standard HTTPS requests and necessarily reveal your IP address to those services.
+- **Backup:** "Back up progress" copies text to your clipboard. Nothing is uploaded unless you paste it somewhere yourself.
+- **Uninstalling the app or clearing its data erases your local progress.** Make a backup first if you want to keep it.
+
+---
+
+## Verification and status
+
+Last recorded verification run: Flutter 3.47.4 on Windows, JDK 21, Android SDK 36.
+
+| Check | Result |
 | --- | --- |
-| Android `applicationId` and `namespace` | `com.shakyaju.pokepod` |
-| iOS / macOS bundle identifier | `com.shakyaju.pokepod` |
-| Linux application id | `com.shakyaju.pokepod` |
-| Dart package | `pokepod` |
+| `flutter pub get` | Pass |
+| `dart format lib test` | Pass (89 files, 0 changed) |
+| `flutter analyze` | Pass: no issues found |
+| `flutter test` | Pass: 327 tests |
+| Android debug APK | Pass |
+| Android release APK | Pass |
+| iOS, web, macOS, Linux, Windows | **Not built or tested** |
 
-This is a proposed unique ID, **not** a claim that it is registered or reserved anywhere. To change
-it: update `android/app/build.gradle.kts` (`namespace`, `applicationId`), move and edit
-`android/app/src/main/kotlin/com/shakyaju/pokepod/MainActivity.kt`, and update the bundle
-identifiers in `ios/Runner.xcodeproj/project.pbxproj`, `macos/Runner/Configs/AppInfo.xcconfig`
-and `linux/CMakeLists.txt`.
+The platform folders for iOS, web and desktop exist but are untested. Re-run the commands above to reproduce these results on your machine.
 
-## Supported platforms
-
-Android is the primary target. iOS, web, macOS, Linux and Windows folders are present (migrated
-from the original project with identifiers updated) but have not been built or tested.
-
-## Privacy
-
-Everything (research progress, favourites, collections, teams, notes, profile, mystery history,
-cached API data) is stored only on your device with SharedPreferences. There are no accounts,
-analytics, ads or custom backend. The only network traffic is to PokéAPI and to the GitHub-hosted
-artwork. Uninstalling the app removes the data.
-
-Because the application ID changed from the old app, a fresh install cannot read the old app's
-private data. The old app stored favourites as PokéAPI URLs; PokéPod does not migrate them, so
-re-add favourites from the Pokédex. Nothing else from the old app was persisted.
+---
 
 ## Known limitations
 
-* Progress by type needs 18 small requests and is loaded on demand.
-* Moves are a sample (first 12 alphabetically), not a full move list. Alternate forms (Mega,
-  regional) are not catalogued; only national-dex species 1–1025 are.
-* Type progress, coverage and suggestions use types only; abilities and moves are not modelled.
-* No screenshots are included.
-* Cached API data lives in SharedPreferences, which is fine for personal use but not designed for
-  very large caches.
-* Home-screen widgets are Android-only, because they are implemented with the Android
-  `home_widget` platform views.
+- **Scope:** only National Dex species **1–1025** are catalogued. Alternate forms (Mega, regional and similar) are not.
+- **Moves:** the dossier shows a sample (the first 12 alphabetically), not a complete move list.
+- **Team analysis** uses types only and assumes STAB coverage. Movesets and abilities are not modelled, and there is no battle simulation.
+- **Sorting** by type, size, base stats or Legendary & Mythical status needs data that is not in the catalogue. Those sorts use data already saved on the device and can load missing data on request.
+- **Research by type** needs 18 small requests, loaded on demand.
+- **Cached data** lives in `shared_preferences`. That suits personal use but is not designed for very large caches, and cached data is not refreshed automatically.
+- **Home-screen widgets and local reminders** are Android-only.
+- **Clock changes:** with no server, moving the device clock forward cannot be prevented.
+- **Backups** are copied as clipboard text; there is no file export, cloud backup or cross-device sync.
+- **Release signing** uses the debug configuration until you add your own keystore.
 
-## Verification status
+---
 
-Run on Flutter 3.47.4 (Windows, JDK 21, Android SDK 36):
+## Credits and disclaimer
 
-| Check | Status |
-| --- | --- |
-| `flutter pub get` | **Pass** |
-| `dart format lib test` | **Pass** — 89 files, 0 changed |
-| `flutter analyze` | **Pass** — no issues found |
-| `flutter test` | **Pass** — 327 tests |
-| Android debug build | **Pass** — `flutter build apk --debug` |
-| Android release build | **Pass** — `flutter build apk --release` |
-| iOS / web / desktop build | **Not run** (no toolchain set up on the verification machine) |
+- **Pokémon data** is provided by [PokéAPI](https://pokeapi.co).
+- **Artwork** is fetched at runtime from the [PokeAPI sprites](https://github.com/PokeAPI/sprites) repository. No Pokémon artwork is stored in this repository.
+- **Sound effects** bundled under `assets/sounds/` were sourced through Zedge. Their redistribution terms have not been independently confirmed.
+- **The PokéPod wordmark** was supplied by the author.
+- **Packages and licences:** full provenance, package licences and redistribution notes are in [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). In the app, **About → Open-source licences** lists every package licence.
 
-## Third-party credits and licences
+**Licence:** this repository currently has no open-source licence file, so no permission to use, modify or redistribute the code is granted until the author adds one.
 
-Pokémon data and artwork are fetched at runtime from [PokéAPI](https://pokeapi.co) and the
-[PokeAPI/sprites](https://github.com/PokeAPI/sprites) repository; **no Pokémon material is stored
-in this repository**. Sound effects bundled under `assets/sounds/` were sourced through
-[Zedge](https://www.zedge.net). Full provenance, package licences and redistribution notes are in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+> **Disclaimer:** PokéPod is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, The Pokémon Company or Game Freak. Pokémon and related names, characters and artwork are trademarks and copyrights of their respective owners. This repository does not claim ownership of any Pokémon intellectual property.
 
-This repository has no open-source licence file yet. Until the author adds one, no permission to
-use, modify or redistribute the code is granted.
+<!-- ============================================================================
+     OPTIONAL: INDIVIDUAL SCREENSHOTS, GIFs AND WIDGET IMAGES
+     Nothing below renders until you remove the comment markers.
+     To use it: upload an image to GitHub, paste its URL, delete the markers around
+     the section (the "<!--" line above and the "-->" line below), and delete any
+     entries you do not have an image for.
 
-## Publishing to a new GitHub repository
+## Screenshots
 
-> Review [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) first — in particular, confirm the
-> redistribution terms of the bundled sound effects before the repository goes public.
+### Discover
+<p align="center"><img src="URL_FOR_DISCOVER" alt="Discover" width="260"></p>
 
-From the project directory (`.gitignore` is already configured for Flutter/Android/IDE/secret
-artefacts, and keeps `pubspec.lock` tracked):
+### Pokédex
+<p align="center"><img src="URL_FOR_POKEDEX" alt="Pokédex" width="260"></p>
 
-```bash
-git init
-git add .
-git status          # review what will be committed — no build output, keystores or .env files
-git commit -m "Initial release of PokéPod"
-git branch -M main
-```
+### Research dossier
+<p align="center"><img src="URL_FOR_DOSSIER" alt="Research dossier" width="260"></p>
 
-Create a new, empty repository on GitHub named `pokepod`, then add its URL and push:
+### Evolution Constellation
+<p align="center"><img src="URL_FOR_EVOLUTION" alt="Evolution Constellation" width="260"></p>
 
-```bash
-git remote add origin YOUR_NEW_GITHUB_REPOSITORY_URL
-git push -u origin main
-```
+### Pokémon DNA
+<p align="center"><img src="URL_FOR_DNA" alt="Pokémon DNA" width="260"></p>
 
-For a last check before the first commit, install [Gitleaks](https://github.com/gitleaks/gitleaks)
-(`winget install Gitleaks.GitLeaks` on Windows) and scan the staged tree:
+### Team Architect
+<p align="center"><img src="URL_FOR_TEAM_ARCHITECT" alt="Team Architect" width="260"></p>
 
-```bash
-gitleaks detect --source . --redact --verbose
-```
+### Who's That Pokémon?
+<p align="center"><img src="URL_FOR_GAME" alt="Who's That Pokémon?" width="260"></p>
 
-## Disclaimer
+### Collections
+<p align="center"><img src="URL_FOR_COLLECTIONS" alt="Collections" width="260"></p>
 
-PokéPod is an **unofficial fan project**. It is not affiliated with, endorsed by, or sponsored by
-Nintendo, The Pokémon Company, or Game Freak. Pokémon and related names, characters and artwork
-are trademarks and copyrights of their respective owners. Data is provided by
-[PokéAPI](https://pokeapi.co).
+### Achievements
+<p align="center"><img src="URL_FOR_ACHIEVEMENTS" alt="Achievements" width="260"></p>
+
+### Android widgets
+<p align="center"><img src="URL_FOR_WIDGETS" alt="Android home-screen widgets" width="520"></p>
+     ============================================================================ -->
+
+---
+
+<div align="center">
+
+Built with Flutter by [ShakyaJU](https://github.com/ShakyaJU)
+
+<sub>PokéPod is an unofficial fan project and is not affiliated with Nintendo, The Pokémon Company or Game Freak.</sub>
+
+</div>
