@@ -1,6 +1,10 @@
 <div align="center">
 
-<h1>PokéPod</h1>
+<!--<h1>PokéPod</h1>-->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ShakyaJU/pokepod/main/assets/branding/pokepod_splash_text.png" alt="PokéPod" width="100%">
+</p>
 
 <h3>Beyond the Pokédex.</h3>
 
