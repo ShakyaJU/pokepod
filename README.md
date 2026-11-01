@@ -4,16 +4,16 @@
 
 <h3>Beyond the Pokédex.</h3>
 
-<p>An unofficial Pokémon research and discovery companion built with Flutter.</p>
+<p>An unofficial Pokémon research game and discovery companion built with Flutter.</p>
 
 <p>
-  <img src="https://img.shields.io/badge/Flutter-3.47.4-02569B?logo=flutter&logoColor=white" alt="Flutter 3.47.4">
-  <img src="https://img.shields.io/badge/Dart-%5E3.10-0175C2?logo=dart&logoColor=white" alt="Dart ^3.10">
-  <img src="https://img.shields.io/badge/State-Riverpod-2DD4A0" alt="Riverpod">
-  <img src="https://img.shields.io/badge/Android-first-3DDC84?logo=android&logoColor=white" alt="Android first">
-  <img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
-  <img src="https://img.shields.io/badge/Local--first-no%20account-5EEAF2" alt="Local-first, no account">
-  <img src="https://img.shields.io/badge/Unofficial-fan%20project-D4A017" alt="Unofficial fan project">
+<img src="https://img.shields.io/badge/Flutter-3.47.4-02569B?logo=flutter&logoColor=white" alt="Flutter 3.47.4">
+<img src="https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white" alt="Dart 3.10">
+<img src="https://img.shields.io/badge/State-Riverpod-2DD4A0" alt="State management: Riverpod">
+<img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Android">
+<img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
+<img src="https://img.shields.io/badge/Storage-Local--first-5EEAF2" alt="Local-first storage">
+<img src="https://img.shields.io/badge/Project-Unofficial%20fan%20project-D4A017" alt="Unofficial fan project">
 </p>
 
 <p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 327 tests</b></p>
