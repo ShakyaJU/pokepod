@@ -329,14 +329,7 @@ The platform folders for iOS, web and desktop exist but are untested. Re-run the
 > **Disclaimer:** PokéPod is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, The Pokémon Company or Game Freak. Pokémon and related names, characters and artwork are trademarks and copyrights of their respective owners. This repository does not claim ownership of any Pokémon intellectual property.
 
 <!-- 
-============================================================================
-     OPTIONAL: INDIVIDUAL SCREENSHOTS, GIFs AND WIDGET IMAGES
-     Nothing below renders until you remove the comment markers.
-     To use it: upload an image to GitHub, paste its URL, delete the markers around
-     the section (the "<!--" line above and the "-->" line below), and delete any
-     entries you do not have an image for. -->
-     
-<!-- 
+
 ## Screenshots
 
 ### Discover
@@ -369,8 +362,7 @@ The platform folders for iOS, web and desktop exist but are untested. Re-run the
 ### Android widgets
 <p align="center"><img src="URL_FOR_WIDGETS" alt="Android home-screen widgets" width="520"></p>
      ============================================================================ 
-     
-     -->
+ -->
 
 ---
 
