@@ -17,6 +17,7 @@
 <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Android">
 <img src="https://img.shields.io/badge/Data-Pok%C3%A9API-EF5350" alt="PokéAPI">
 <img src="https://img.shields.io/badge/Storage-Local--first-5EEAF2" alt="Local-first storage">
+<img src="https://img.shields.io/badge/License-MIT-D4A017?style=flat" alt="MIT License">
 <img src="https://img.shields.io/badge/Project-Unofficial%20fan%20project-FFD700" alt="Unofficial fan project">
 </p>
 
