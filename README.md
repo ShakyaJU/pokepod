@@ -1,7 +1,5 @@
 <div align="center">
 
-<!--<h1>PokéPod</h1>-->
-
 <p align="center">
   <img src="assets/branding/pokepod_splash_text.png" alt="PokéPod" width="300">
 </p>
