@@ -20,17 +20,11 @@
 
 </div>
 
-<!-- ============================================================================
-     PRIMARY OVERVIEW IMAGE: REPLACE THE PLACEHOLDER BELOW
-     1. Upload the compiled overview PNG through GitHub (for example, drag it into
-        the README editor or an issue comment).
-     2. Replace YOUR_GITHUB_IMAGE_URL with the URL GitHub gives you.
-     ============================================================================ -->
 <p align="center">
   <img src="App screenshot compilation.png" alt="PokéPod — Complete Application Overview" width="100%">
 </p>
 
-PokéPod treats the Pokédex as a **research instrument** rather than a list. You browse the National Pokédex, open research dossiers, record what you have discovered, studied and mastered, compare specimens, build teams, organise collections and play a daily "Who's That Pokémon?" challenge.
+PokéPod treats the Pokédex as a **research instrument** rather than a list. You browse the Pokédex, open research dossiers, record what you have discovered, studied and mastered, compare specimens, build teams, organise collections and play a daily "Who's That Pokémon?" challenge.
 
 Everything you create is stored **locally on your device**. There is no account to create and no custom backend.
 
