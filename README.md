@@ -21,6 +21,11 @@
 
 <p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 327 tests</b></p>
 
+<p>
+  <b>🎬 Watch the Full PokéPod App Demonstration</b><br>
+  <a href="https://drive.google.com/file/d/1mC15HkOd97j_yW7tOFx_2wqBNsXa5Kaf/view?usp=sharing">Watch the PokéPod Demo</a>
+</p>
+
 </div>
 
 <p align="center">
@@ -36,6 +41,18 @@ Everything you create is stored **locally on your device**. There is no account 
 ## Contents
 
 - [Features](#features)
+  - [Discover](#discover)
+  - [Pokédex](#pokédex)
+  - [Research dossiers](#research-dossiers)
+  - [Evolution Constellation](#evolution-constellation)
+  - [Pokémon DNA](#pokémon-dna)
+  - [Team Architect](#team-architect)
+  - [Who's That Pokémon?](#whos-that-pokémon)
+  - [Collections](#collections)
+  - [Profile and progression](#profile-and-progression)
+  - [Android home-screen widgets](#android-home-screen-widgets)
+  - [Notifications and sound](#notifications-and-sound)
+  - [Settings, backup, help and about](#settings-backup-help-and-about)
 - [Technical architecture](#technical-architecture)
 - [Data, caching and offline behavior](#data-caching-and-offline-behavior)
 - [Tech stack](#tech-stack)
@@ -44,6 +61,7 @@ Everything you create is stored **locally on your device**. There is no account 
 - [Verification and status](#verification-and-status)
 - [Known limitations](#known-limitations)
 - [Credits and disclaimer](#credits-and-disclaimer)
+- [License](#license)
 
 ---
 
@@ -58,13 +76,28 @@ A dashboard that works for a brand-new user and for an experienced one.
 - **Research progress** ring, recently viewed Pokémon and upcoming milestones.
 - **Unexpected Connections**: relationships between Pokémon, each with an explanation based on real data (shared abilities, similar stat shapes, similar totals with different strengths, shared evolution families).
 
+<p align="center">
+  <img src="pokepod-gifs/specimen%20of%20the%20day.gif" alt="Specimen of the Day on the Discover screen" width="300"><br>
+  <sub><b>Specimen of the Day</b> on the Discover dashboard</sub>
+</p>
+
+---
+
 ### Pokédex
 
-- The **National Pokédex, species 1–1025**, loaded incrementally (30 at a time).
+The **National Pokédex, species 1–1025**, loaded incrementally (30 at a time).
+
 - Search by **name or number**; filters for **type**, **generation** and **favourites**, which can be combined and cleared in one tap.
 - A dedicated **Sort by** sheet, separate from the filters, with direction that adapts to the property: Pokédex number, name, generation, type, Legendary & Mythical, favourites, height, weight and base stats.
 - Grid and compact list layouts, loading skeletons, empty states and retry on failure.
 - Optional **Living Dex** silhouettes for Pokémon you have not discovered yet.
+
+<p align="center">
+  <img src="pokepod-gifs/pokedex.gif" alt="Pokédex browsing, searching, filtering and sorting" width="300"><br>
+  <sub><b>Pokédex</b>: search, filters and sorting</sub>
+</p>
+
+---
 
 ### Research dossiers
 
@@ -77,17 +110,42 @@ Each Pokémon opens a full dossier:
 
 Opening a dossier marks a Pokémon as *Discovered*. *Studied* and *Mastered* are always explicit choices, one step at a time.
 
+---
+
 ### Evolution Constellation
 
 An interactive, pannable and zoomable graph generated from PokéAPI evolution-chain data. It handles branching families (such as Eevee) and multi-stage chains, labels each link with readable evolution conditions, highlights the selected Pokémon and opens any node's dossier on tap.
+
+<p align="center">
+  <img src="pokepod-gifs/evolution%20constellation.gif" alt="Evolution Constellation graph being explored" width="300"><br>
+  <sub><b>Evolution Constellation</b>: explore a family by panning, zooming and tapping</sub>
+</p>
+
+---
 
 ### Pokémon DNA
 
 A two-specimen comparison: stat bars with differences, totals, types, abilities and a defensive profile (weaknesses, resistances, immunities). The written analysis is generated from the data and never claims that base stats predict a battle.
 
+<p align="center">
+  <img src="pokepod-gifs/pokemon%20dna.gif" alt="Pokémon DNA comparison of two specimens" width="300"><br>
+  <sub><b>Pokémon DNA</b>: comparing two specimens</sub>
+</p>
+
+---
+
 ### Team Architect
 
 Teams of up to six Pokémon that you can create, rename, duplicate and delete. The analysis shows a defensive matrix (weak, resist and immune counts per attacking type), offensive coverage and explainable suggestions for gaps.
+
+Offensive coverage is STAB-based and does not simulate battles; see [Type chart and team analysis](#type-chart-and-team-analysis).
+
+<p align="center">
+  <img src="pokepod-gifs/team%20architect.gif" alt="Team Architect building and analysing a team" width="300"><br>
+  <sub><b>Team Architect</b>: building a team and reading its analysis</sub>
+</p>
+
+---
 
 ### Who's That Pokémon?
 
@@ -98,32 +156,111 @@ A daily guessing game with one Pokémon per local calendar day.
 - A clear **win** or **game over** state that reveals the answer, locks the day and cannot be replayed after a restart.
 - **Current and best streak**, games played, win rate and a collapsible result history, all persisted.
 
+The way the daily answer is chosen is described in [Daily challenge selection](#daily-challenge-selection).
+
+<p align="center">
+  <img src="pokepod-gifs/whos%20that%20pokemon%20challenge.gif" alt="Who's That Pokémon? daily challenge being played" width="300"><br>
+  <sub><b>Who's That Pokémon?</b>: guesses, clues and the progressive reveal</sub>
+</p>
+
+---
+
 ### Collections
 
 Custom collections, a reorderable showcase, pinned favourites, **Generation Dex Progress** (pick a generation to see how much of it you have discovered), research progress by type and recent research.
 
-### Trainer profile
+<p align="center">
+  <img src="pokepod-gifs/collections.gif" alt="Collections, showcase and Generation Dex Progress" width="300"><br>
+  <sub><b>Collections</b>: showcase, custom collections and generation progress</sub>
+</p>
+
+---
+
+### Profile and progression
+
+#### Trainer profile
 
 Nickname and avatar (any Pokémon), a selectable **Accent Color**, System/Dark/Light theme, research statistics, an achievements preview, a **research journal** of your notes and saved teams. A side menu leads to Achievements, Research Journal, Settings, Help & User Guide and About.
 
-### Achievements
+<p align="center">
+  <img src="pokepod-gifs/trainer%20profile.gif" alt="Trainer profile with avatar, statistics and side menu" width="300"><br>
+  <sub><b>Trainer profile</b>: avatar, statistics and the side menu</sub>
+</p>
 
-**20 achievements** unlocked from real research and gameplay progress, each with a progress bar and a rarity tier. There are **nine tiers**:
+#### Achievements and the research journal
+
+**20 achievements** unlock from real research and gameplay progress, each with a progress bar and a rarity tier. There are **nine tiers**:
 
 `Common` · `Uncommon` · `Rare` · `Epic` · `Double Rare` · `Ultra Rare` · `Illustration Rare` · `Special Illustration Rare` · `Hyper Rare`
+
+The **research journal** collects the notes you write in dossiers and your saved teams in one place.
+
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/achievements.gif" alt="Achievements with progress bars and rarity tiers" width="240"><br>
+      <sub><b>Achievements</b></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/research%20journal.gif" alt="Research journal of notes and saved teams" width="240"><br>
+      <sub><b>Research journal</b></sub>
+    </td>
+  </tr>
+</table>
+
+---
 
 ### Android home-screen widgets
 
 Four launcher sizes (**compact, small, medium and large**) show the same Specimen of the Day as the app. Larger sizes progressively add more: artwork, name and number, then type badges, the Pokédex description and height and weight.
+
+To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
+
+<p align="center">
+  <img src="pokepod-gifs/app%20widgets.gif" alt="PokéPod home-screen widgets in four sizes" width="300"><br>
+  <sub><b>Home-screen widgets</b>: compact, small, medium and large</sub>
+</p>
+
+---
 
 ### Notifications and sound
 
 - **Opt-in local reminders**: a daily reminder and a Who's That Pokémon? streak reminder, scheduled in the device's local time zone and introduced by an in-app explanation before any system permission prompt. No push service is involved.
 - Short **sound effects** for the splash screen and the daily game; they can be turned off in Settings.
 
-### Help, backup and restore
+---
 
-A searchable, collapsible **Help & User Guide** covers every feature. **Back up progress** copies a versioned backup of your progress to the clipboard as text, and **Restore from backup** validates it, shows what it contains and asks for confirmation before replacing anything.
+### Settings, backup, help and about
+
+**Settings** holds your preferences, including theme and sound, and the **Data** options. **Back up progress** copies a versioned backup of your progress to the clipboard as text, and **Restore from backup** validates it, shows what it contains and asks for confirmation before replacing anything. Nothing is uploaded unless you paste it somewhere yourself.
+
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/settings.gif" alt="Settings screen" width="240"><br>
+      <sub><b>Settings</b></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/backup%20and%20restore.gif" alt="Backing up and restoring progress" width="240"><br>
+      <sub><b>Backup and restore</b></sub>
+    </td>
+  </tr>
+</table>
+
+A searchable, collapsible **Help & User Guide** covers every feature. **About** lists the sources and credits, an open-source licences page and the unofficial-project disclaimer.
+
+<table align="center">
+  <tr>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/help%20and%20user%20guide.gif" alt="Searchable Help and User Guide" width="240"><br>
+      <sub><b>Help &amp; User Guide</b></sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="pokepod-gifs/about.gif" alt="About screen with credits and licences" width="240"><br>
+      <sub><b>About</b></sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -330,42 +467,6 @@ PokéPod's original source code is released under the [MIT License](./LICENSE).
 This license applies to the original code authored for this project. Pokémon-related names, characters, artwork, trademarks, and other third-party materials remain the property of their respective owners and are not covered by this license. Third-party dependencies and assets remain subject to their respective licenses and usage terms.
 
 > **Disclaimer:** PokéPod is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, The Pokémon Company or Game Freak. Pokémon and related names, characters and artwork are trademarks and copyrights of their respective owners. This repository does not claim ownership of any Pokémon intellectual property.
-
-<!-- 
-
-## Screenshots
-
-### Discover
-<p align="center"><img src="URL_FOR_DISCOVER" alt="Discover" width="260"></p>
-
-### Pokédex
-<p align="center"><img src="URL_FOR_POKEDEX" alt="Pokédex" width="260"></p>
-
-### Research dossier
-<p align="center"><img src="URL_FOR_DOSSIER" alt="Research dossier" width="260"></p>
-
-### Evolution Constellation
-<p align="center"><img src="URL_FOR_EVOLUTION" alt="Evolution Constellation" width="260"></p>
-
-### Pokémon DNA
-<p align="center"><img src="URL_FOR_DNA" alt="Pokémon DNA" width="260"></p>
-
-### Team Architect
-<p align="center"><img src="URL_FOR_TEAM_ARCHITECT" alt="Team Architect" width="260"></p>
-
-### Who's That Pokémon?
-<p align="center"><img src="URL_FOR_GAME" alt="Who's That Pokémon?" width="260"></p>
-
-### Collections
-<p align="center"><img src="URL_FOR_COLLECTIONS" alt="Collections" width="260"></p>
-
-### Achievements
-<p align="center"><img src="URL_FOR_ACHIEVEMENTS" alt="Achievements" width="260"></p>
-
-### Android widgets
-<p align="center"><img src="URL_FOR_WIDGETS" alt="Android home-screen widgets" width="520"></p>
-     ============================================================================ 
- -->
 
 ---
 
