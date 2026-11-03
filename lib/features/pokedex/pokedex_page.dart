@@ -36,167 +36,204 @@ class _PokedexPageState extends ConsumerState<PokedexPage> {
     final notifier = ref.read(pokedexProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
 
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          PageHeader(
-            title: 'Pokédex',
-            subtitle: 'Catalogue',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: ui.livingDex
-                      ? 'Show all artwork'
-                      : 'Living Dex: silhouette unseen',
-                  onPressed: notifier.toggleLivingDex,
-                  icon: Icon(
-                    ui.livingDex ? Icons.contrast : Icons.contrast_outlined,
-                    color: ui.livingDex ? scheme.primary : null,
-                  ),
-                ),
-                IconButton(
-                  tooltip: ui.view == PokedexView.grid
-                      ? 'Compact list'
-                      : 'Grid',
-                  onPressed: () => notifier.setView(
-                    ui.view == PokedexView.grid
-                        ? PokedexView.list
-                        : PokedexView.grid,
-                  ),
-                  icon: Icon(
-                    ui.view == PokedexView.grid
-                        ? Icons.view_list_rounded
-                        : Icons.grid_view_rounded,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const LiveStatusBanner(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.md),
-            child: TextField(
-              controller: _search,
-              onChanged: notifier.setQuery,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Search name or number',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: ui.filter.query.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Clear search',
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _search.clear();
-                          notifier.setQuery('');
-                        },
+    // Ask for the next page as the results approach their end.
+    final items = results.valueOrNull;
+    final itemCount = items?.length ?? 0;
+    final shown = ui.visibleCount < itemCount ? ui.visibleCount : itemCount;
+    final hasMore = items != null && shown < itemCount;
+
+    // One scroll view for the whole screen: the header controls scroll with
+    // the results instead of competing with them for a fixed height, which is
+    // what used to overflow once the keyboard shrank the page.
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (hasMore && n.metrics.extentAfter < 700) {
+          notifier.loadMore(itemCount, renderedCount: ui.visibleCount);
+        }
+        return false;
+      },
+      child: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          key: const PageStorageKey('pokedex-scroll'),
+          // Dragging the results dismisses the keyboard and returns its
+          // height to the page — Flutter's own behaviour, not manual
+          // keyboard handling.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverToBoxAdapter(
+              child: PageHeader(
+                title: 'Pokédex',
+                subtitle: 'Catalogue',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: ui.livingDex
+                          ? 'Show all artwork'
+                          : 'Living Dex: silhouette unseen',
+                      onPressed: notifier.toggleLivingDex,
+                      icon: Icon(
+                        ui.livingDex ? Icons.contrast : Icons.contrast_outlined,
+                        color: ui.livingDex ? scheme.primary : null,
                       ),
-                filled: true,
-                fillColor: scheme.surfaceContainerLow,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(Radii.md),
-                  borderSide: BorderSide(color: scheme.outlineVariant),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(Radii.md),
-                  borderSide: BorderSide(color: scheme.outlineVariant),
+                    ),
+                    IconButton(
+                      tooltip: ui.view == PokedexView.grid
+                          ? 'Compact list'
+                          : 'Grid',
+                      onPressed: () => notifier.setView(
+                        ui.view == PokedexView.grid
+                            ? PokedexView.list
+                            : PokedexView.grid,
+                      ),
+                      icon: Icon(
+                        ui.view == PokedexView.grid
+                            ? Icons.view_list_rounded
+                            : Icons.grid_view_rounded,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: Space.sm),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: Space.md),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.sm),
-                  child: Center(
-                    child: Text(
-                      'FILTER',
-                      style: readoutStyle(context, size: 10),
+            const SliverToBoxAdapter(child: LiveStatusBanner()),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: TextField(
+                  controller: _search,
+                  onChanged: notifier.setQuery,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Search name or number',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: ui.filter.query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Clear search',
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _search.clear();
+                              notifier.setQuery('');
+                            },
+                          ),
+                    filled: true,
+                    fillColor: scheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Radii.md),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Radii.md),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                   ),
                 ),
-                _FilterButton(
-                  label: ui.filter.type == null
-                      ? 'Type'
-                      : titleCase(ui.filter.type!),
-                  active: ui.filter.type != null,
-                  onTap: () => _pickType(context),
-                ),
-                _FilterButton(
-                  label: ui.filter.generation == null
-                      ? 'Generation'
-                      : 'Gen ${kRomanNumerals[ui.filter.generation! - 1]}',
-                  active: ui.filter.generation != null,
-                  onTap: () => _pickGeneration(context),
-                ),
-                _FilterButton(
-                  label: 'Favourites',
-                  active: ui.filter.favouritesOnly,
-                  icon: Icons.favorite_border,
-                  onTap: notifier.toggleFavourites,
-                ),
-              ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(Space.md, Space.sm, Space.md, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _SortButton(
-                    filter: ui.filter,
-                    onTap: () => _openSortSheet(context),
-                  ),
+            const SliverToBoxAdapter(child: SizedBox(height: Space.sm)),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 40,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: Space.sm),
+                      child: Center(
+                        child: Text(
+                          'FILTER',
+                          style: readoutStyle(context, size: 10),
+                        ),
+                      ),
+                    ),
+                    _FilterButton(
+                      label: ui.filter.type == null
+                          ? 'Type'
+                          : titleCase(ui.filter.type!),
+                      active: ui.filter.type != null,
+                      onTap: () => _pickType(context),
+                    ),
+                    _FilterButton(
+                      label: ui.filter.generation == null
+                          ? 'Generation'
+                          : 'Gen ${kRomanNumerals[ui.filter.generation! - 1]}',
+                      active: ui.filter.generation != null,
+                      onTap: () => _pickGeneration(context),
+                    ),
+                    _FilterButton(
+                      label: 'Favourites',
+                      active: ui.filter.favouritesOnly,
+                      icon: Icons.favorite_border,
+                      onTap: notifier.toggleFavourites,
+                    ),
+                  ],
                 ),
-                if (!ui.filter.isDefaultSort)
-                  IconButton(
-                    tooltip: 'Reset sort to Pokédex number',
-                    icon: const Icon(Icons.restart_alt),
-                    onPressed: notifier.resetSort,
-                  ),
-              ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.md),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    results.valueOrNull == null
-                        ? ''
-                        : '${results.valueOrNull!.length} matching',
-                    style: readoutStyle(context),
-                  ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.md,
+                  Space.sm,
+                  Space.md,
+                  0,
                 ),
-                if (ui.filter.isActive)
-                  TextButton(
-                    onPressed: () {
-                      _search.clear();
-                      notifier.clearFilters();
-                    },
-                    child: const Text('Clear filters'),
-                  ),
-              ],
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _SortButton(
+                        filter: ui.filter,
+                        onTap: () => _openSortSheet(context),
+                      ),
+                    ),
+                    if (!ui.filter.isDefaultSort)
+                      IconButton(
+                        tooltip: 'Reset sort to Pokédex number',
+                        icon: const Icon(Icons.restart_alt),
+                        onPressed: notifier.resetSort,
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          if (ui.filter.sortKey.needsFacts && results.valueOrNull != null)
-            _FactsBanner(
-              ids: [for (final p in results.valueOrNull!) p.id],
-              sortKey: ui.filter.sortKey,
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        results.valueOrNull == null
+                            ? ''
+                            : '${results.valueOrNull!.length} matching',
+                        style: readoutStyle(context),
+                      ),
+                    ),
+                    if (ui.filter.isActive)
+                      TextButton(
+                        onPressed: () {
+                          _search.clear();
+                          notifier.clearFilters();
+                        },
+                        child: const Text('Clear filters'),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          Expanded(
-            child: _Results(results: results, ui: ui),
-          ),
-        ],
+            if (ui.filter.sortKey.needsFacts && items != null)
+              SliverToBoxAdapter(
+                child: _FactsBanner(
+                  ids: [for (final p in items) p.id],
+                  sortKey: ui.filter.sortKey,
+                ),
+              ),
+            _Results(results: results, ui: ui),
+          ],
+        ),
       ),
     );
   }
@@ -666,80 +703,79 @@ class _Results extends ConsumerWidget {
   final PokedexResults results;
   final PokedexUiState ui;
 
+  /// The results as a single sliver, so they scroll together with the header
+  /// controls: no fixed-height column is left to overflow the page.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return results.when(
       loading: () => const _SkeletonGrid(),
-      error: (error, _) => ErrorRetry(
-        error: error,
-        onRetry: () {
-          ref.invalidate(catalogProvider);
-          final type = ui.filter.type;
-          if (type != null) {
-            ref.invalidate(typeMembersProvider(type));
-          }
-        },
+      error: (error, _) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: ErrorRetry(
+          error: error,
+          onRetry: () {
+            ref.invalidate(catalogProvider);
+            final type = ui.filter.type;
+            if (type != null) {
+              ref.invalidate(typeMembersProvider(type));
+            }
+          },
+        ),
       ),
       data: (items) {
         if (items.isEmpty) {
-          return EmptyState(
-            icon: Icons.search_off,
-            title: 'No Pokémon match',
-            message: ui.filter.favouritesOnly && ui.filter.query.isEmpty
-                ? 'Favourite a Pokémon with the heart to see it here.'
-                : 'Try a different name, number or filter.',
-            action: ui.filter.isActive
-                ? OutlinedButton(
-                    onPressed: () =>
-                        ref.read(pokedexProvider.notifier).clearFilters(),
-                    child: const Text('Clear filters'),
-                  )
-                : null,
+          // Fills whatever height is left, and scrolls with the page when
+          // the keyboard has left none.
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyState(
+              icon: Icons.search_off,
+              title: 'No Pokémon match',
+              message: ui.filter.favouritesOnly && ui.filter.query.isEmpty
+                  ? 'Favourite a Pokémon with the heart to see it here.'
+                  : 'Try a different name, number or filter.',
+              action: ui.filter.isActive
+                  ? OutlinedButton(
+                      onPressed: () =>
+                          ref.read(pokedexProvider.notifier).clearFilters(),
+                      child: const Text('Clear filters'),
+                    )
+                  : null,
+            ),
           );
         }
         final shown = ui.visibleCount < items.length
             ? ui.visibleCount
             : items.length;
         final visible = items.sublist(0, shown);
-        final hasMore = shown < items.length;
 
-        return NotificationListener<ScrollNotification>(
-          onNotification: (n) {
-            if (hasMore && n.metrics.extentAfter < 700) {
-              ref
-                  .read(pokedexProvider.notifier)
-                  .loadMore(items.length, renderedCount: ui.visibleCount);
-            }
-            return false;
-          },
-          child: ui.view == PokedexView.grid
-              ? GridView.builder(
-                  key: const PageStorageKey('pokedex-grid'),
-                  padding: const EdgeInsets.all(Space.md),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 180,
-                    mainAxisSpacing: Space.sm,
-                    crossAxisSpacing: Space.sm,
-                    childAspectRatio: 0.82,
-                  ),
-                  itemCount: visible.length,
-                  itemBuilder: (context, i) => PokemonGridTile(
-                    key: ValueKey(visible[i].id),
-                    pokemon: visible[i],
-                    livingDex: ui.livingDex,
+        return SliverPadding(
+          padding: const EdgeInsets.all(Space.md),
+          sliver: ui.view == PokedexView.grid
+              ? SliverGrid(
+                  gridDelegate: _gridDelegate,
+                  delegate: SliverChildBuilderDelegate(
+                    (_, i) => PokemonGridTile(
+                      key: ValueKey(visible[i].id),
+                      pokemon: visible[i],
+                      livingDex: ui.livingDex,
+                    ),
+                    childCount: visible.length,
                   ),
                 )
-              : ListView.separated(
-                  key: const PageStorageKey('pokedex-list'),
-                  padding: const EdgeInsets.all(Space.md),
-                  itemCount: visible.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: Space.sm),
-                  itemBuilder: (context, i) => PokemonRowTile(
-                    key: ValueKey(visible[i].id),
-                    pokemon: visible[i],
-                    livingDex: ui.livingDex,
-                  ),
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate((_, i) {
+                    if (i.isEven) {
+                      final pokemon = visible[i ~/ 2];
+                      return PokemonRowTile(
+                        key: ValueKey(pokemon.id),
+                        pokemon: pokemon,
+                        livingDex: ui.livingDex,
+                      );
+                    }
+                    // The same gap `ListView.separated` used to insert.
+                    return const SizedBox(height: Space.sm);
+                  }, childCount: visible.length * 2 - 1),
                 ),
         );
       },
@@ -747,23 +783,28 @@ class _Results extends ConsumerWidget {
   }
 }
 
+/// The one grid geometry shared by the results and the loading skeleton.
+const _gridDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
+  maxCrossAxisExtent: 180,
+  mainAxisSpacing: Space.sm,
+  crossAxisSpacing: Space.sm,
+  childAspectRatio: 0.82,
+);
+
 class _SkeletonGrid extends StatelessWidget {
   const _SkeletonGrid();
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.all(Space.md),
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        mainAxisSpacing: Space.sm,
-        crossAxisSpacing: Space.sm,
-        childAspectRatio: 0.82,
+      sliver: SliverGrid(
+        gridDelegate: _gridDelegate,
+        delegate: SliverChildBuilderDelegate(
+          (_, _) => const SkeletonBox(height: 100, radius: Radii.md),
+          childCount: 12,
+        ),
       ),
-      itemCount: 12,
-      itemBuilder: (context, _) =>
-          const SkeletonBox(height: 100, radius: Radii.md),
     );
   }
 }

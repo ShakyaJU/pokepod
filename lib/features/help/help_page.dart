@@ -51,10 +51,15 @@ class _HelpPageState extends State<HelpPage> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final query = _search.text.trim();
-    final topics = [
-      for (final t in kHelpTopics)
-        if (query.isEmpty || t.matches(query)) t,
-    ];
+    // Ranked, content-based results: the best-matching sections first, each
+    // with the passage that matched it. With no query every section is shown
+    // in guide order, exactly as the table of contents lists them.
+    final results = query.isEmpty
+        ? [
+            for (final topic in kHelpTopics)
+              HelpSearchResult(topic: topic, score: 0, excerpt: null),
+          ]
+        : searchHelp(query);
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +143,7 @@ class _HelpPageState extends State<HelpPage> {
               ),
               const SizedBox(height: Space.md),
             ],
-            if (topics.isEmpty)
+            if (results.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: Space.xl),
                 child: EmptyState(
@@ -149,26 +154,80 @@ class _HelpPageState extends State<HelpPage> {
                 ),
               )
             else
-              for (final t in topics)
+              for (final result in results)
                 Padding(
-                  key: _keys[t.id],
+                  key: _keys[result.topic.id],
                   padding: const EdgeInsets.only(bottom: Space.sm),
                   child: ExpandableSection(
                     // A new key re-creates the section with its new initial state when a
                     // search starts, ends, or the table of contents jumps to it.
                     key: ValueKey(
-                      '${t.id}-${query.isEmpty}-${_openId == t.id}',
+                      '${result.topic.id}-${query.isEmpty}-'
+                      '${_openId == result.topic.id}',
                     ),
-                    title: t.title,
-                    leading: Icon(t.icon),
-                    initiallyExpanded: query.isNotEmpty || _openId == t.id,
-                    child: _TopicBody(topic: t),
+                    title: result.topic.title,
+                    leading: Icon(result.topic.icon),
+                    initiallyExpanded:
+                        query.isNotEmpty || _openId == result.topic.id,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (result.excerpt != null) ...[
+                          _MatchExcerpt(text: result.excerpt!, query: query),
+                          const SizedBox(height: Space.sm),
+                        ],
+                        _TopicBody(topic: result.topic),
+                      ],
+                    ),
                   ),
                 ),
           ],
         ),
       ),
     );
+  }
+}
+
+class _MatchExcerpt extends StatelessWidget {
+  const _MatchExcerpt({required this.text, required this.query});
+
+  /// The passage the search matched, already cut around the hit.
+  final String text;
+
+  /// The query the passage was found for; its words are emphasised.
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final base = TextStyle(
+      fontSize: 13,
+      height: 1.4,
+      color: scheme.onSurfaceVariant,
+    );
+    final pattern = helpHighlightPattern(query);
+    if (pattern == null) {
+      return Text(text, style: base);
+    }
+    final hit = TextStyle(
+      fontSize: 13,
+      height: 1.4,
+      fontWeight: FontWeight.w600,
+      color: scheme.primary,
+    );
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+      spans.add(TextSpan(text: match.group(0), style: hit));
+      cursor = match.end;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+    return Text.rich(TextSpan(children: spans, style: base));
   }
 }
 

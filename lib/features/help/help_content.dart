@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 enum HelpBlockKind { paragraph, bullets, tip }
@@ -31,13 +33,11 @@ class HelpTopic {
   final String title;
   final List<HelpBlock> blocks;
 
-  bool matches(String query) {
-    final q = query.toLowerCase();
-    if (title.toLowerCase().contains(q)) {
-      return true;
-    }
-    return blocks.any((b) => b.searchText.toLowerCase().contains(q));
-  }
+  /// Whether a content-based search for [query] would return this topic.
+  ///
+  /// Delegates to [searchHelpTopics] so the guide, the search field and the
+  /// table of contents can never disagree about what matches.
+  bool matches(String query) => searchHelpTopics([this], query).isNotEmpty;
 }
 
 /// The guide describes only controls and behaviour that exist in the app.
@@ -459,6 +459,9 @@ const List<HelpTopic> kHelpTopics = [
           'it can write today\'s specimen, then the widget updates in place.',
       'No streak reminder arrives: check Settings > Notifications. Both the PokéPod switch and the '
           'Android permission have to be on, and only an unplayed day with an active streak is worth reminding about.',
+      'Sound effects: PokéPod plays a short sound when it opens, music during the Who\'s That '
+          'Pokémon? challenge, and a correct or wrong sound after every guess. They follow your '
+          'device\'s media volume (there is no in-app sound setting).',
     ]),
   ]),
   HelpTopic('sources', Icons.info_outline, 'About and data sources', [
@@ -469,3 +472,299 @@ const List<HelpTopic> kHelpTopics = [
     ),
   ]),
 ];
+
+// ---------------------------------------------------------------------------
+// Content-based search
+// ---------------------------------------------------------------------------
+
+/// Words that carry no meaning on their own. They are dropped from a query
+/// whenever a meaningful word remains, so "Backup and Restore" is matched as
+/// [backup, restore] and "and" can never hit "Android".
+const Set<String> _stopWords = {
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'on',
+  'at',
+  'by',
+  'for',
+  'is',
+  'it',
+  'as',
+  'with',
+  'your',
+  'you',
+  'my',
+  'me',
+  'i',
+  'be',
+  'can',
+  'do',
+  'does',
+  'how',
+  'what',
+  'when',
+  'why',
+  'where',
+  'this',
+  'that',
+  'from',
+  'into',
+  'about',
+  'not',
+  'no',
+  'so',
+  'if',
+  'then',
+  'than',
+};
+
+final RegExp _notLetterOrDigit = RegExp(r'[^\p{L}\p{N}]+', unicode: true);
+final RegExp _spaceRun = RegExp(r'\s+');
+
+/// Lower-cases [text] and collapses everything that is not a letter, a digit
+/// or a space, so "Who's That Pokémon?" and "whos that pokémon" compare as
+/// the same words whatever the case, punctuation or spacing.
+String _normalize(String text) => text
+    .toLowerCase()
+    .replaceAll("'", '')
+    .replaceAll('’', '')
+    .replaceAll(_notLetterOrDigit, ' ')
+    .trim()
+    .replaceAll(_spaceRun, ' ');
+
+/// The words a query is actually matched on: normalised, with stop words
+/// removed while any meaningful word remains.
+List<String> _queryTokens(String query) {
+  final all = _normalize(query).split(' ').where((w) => w.isNotEmpty).toList();
+  final meaningful = [
+    for (final w in all)
+      if (!_stopWords.contains(w)) w,
+  ];
+  return meaningful.isEmpty ? all : meaningful;
+}
+
+/// A [word] covers a search [token] when it equals the token or starts with
+/// it, so "restor" finds "restoring" and "notifi" finds "notifications".
+/// Matching only ever runs from the typed word into the guide, never the
+/// other way: otherwise a stray "them" would count as the word "theme".
+bool _wordCovers(String word, String token) =>
+    word == token || word.startsWith(token);
+
+/// One section returned by [searchHelpTopics]: the section itself, how
+/// strongly it matched, and the passage that matched it.
+class HelpSearchResult {
+  const HelpSearchResult({
+    required this.topic,
+    required this.score,
+    required this.excerpt,
+  });
+
+  /// The guide section that matched.
+  final HelpTopic topic;
+
+  /// Ranking weight; higher ranks first. Only comparable between results of
+  /// the same query.
+  final int score;
+
+  /// The matching passage, starting exactly at the first match so it reads
+  /// from the hit onwards, or null when the section matched on its title
+  /// alone.
+  final String? excerpt;
+}
+
+/// Searches every section of [topics] for [query] and returns them ranked,
+/// best match first, in document order when two sections score equally.
+///
+/// Matching is content-based: case, spacing and punctuation are ignored and
+/// words match on their prefix, so "Theme Mode" still finds the section that
+/// explains the Theme setting. A section is only returned when at least one
+/// word of the query actually appears in its title or text.
+List<HelpSearchResult> searchHelpTopics(
+  Iterable<HelpTopic> topics,
+  String query,
+) {
+  final tokens = _queryTokens(query);
+  if (tokens.isEmpty) {
+    return [
+      for (final topic in topics)
+        HelpSearchResult(topic: topic, score: 0, excerpt: null),
+    ];
+  }
+  final phrase = _normalize(query);
+  final hits = <({int index, HelpSearchResult result})>[];
+  var index = 0;
+  for (final topic in topics) {
+    final score = _scoreTopic(topic, tokens: tokens, phrase: phrase);
+    if (score != null) {
+      hits.add((
+        index: index,
+        result: HelpSearchResult(
+          topic: topic,
+          score: score,
+          excerpt: _excerptFor(topic, query: query, tokens: tokens),
+        ),
+      ));
+    }
+    index++;
+  }
+  hits.sort(
+    (a, b) => a.result.score == b.result.score
+        ? a.index.compareTo(b.index)
+        : b.result.score.compareTo(a.result.score),
+  );
+  return [for (final hit in hits) hit.result];
+}
+
+/// Searches the whole guide for [query]; see [searchHelpTopics].
+List<HelpSearchResult> searchHelp(String query) =>
+    searchHelpTopics(kHelpTopics, query);
+
+/// How well one section matches: a title phrase beats a title word, which
+/// beats a body phrase, which beats body words, and sections that only know
+/// some of the query words are discounted. Returns null when nothing matches.
+int? _scoreTopic(
+  HelpTopic topic, {
+  required List<String> tokens,
+  required String phrase,
+}) {
+  final title = _normalize(topic.title);
+  final titleWords = title.split(' ');
+  final blockWords = [
+    for (final block in topic.blocks) _normalize(block.searchText).split(' '),
+  ];
+  final body = _normalize(
+    [for (final block in topic.blocks) block.searchText].join(' '),
+  );
+
+  var titleHits = 0;
+  var bodyHits = 0;
+  var covered = 0;
+  var occurrences = 0;
+  for (final token in tokens) {
+    final inTitle = titleWords.any((w) => _wordCovers(w, token));
+    var inBody = false;
+    for (final words in blockWords) {
+      for (final word in words) {
+        if (_wordCovers(word, token)) {
+          inBody = true;
+          occurrences++;
+        }
+      }
+    }
+    if (inTitle) {
+      titleHits++;
+      occurrences += titleWords.where((w) => _wordCovers(w, token)).length;
+    }
+    if (inBody) bodyHits++;
+    if (inTitle || inBody) covered++;
+  }
+  if (covered == 0) return null;
+
+  var score = 0;
+  if (phrase.isNotEmpty && title.contains(phrase)) {
+    score += 1000;
+  } else if (phrase.isNotEmpty && title.startsWith(phrase)) {
+    score += 700;
+  }
+  score += 120 * titleHits;
+  if (phrase.isNotEmpty && body.contains(phrase)) score += 300;
+  score += 60 * bodyHits;
+  score += 5 * occurrences;
+  if (covered < tokens.length) score = score * 40 ~/ 100;
+  return score;
+}
+
+/// The passage of [topic] that best matches the query: the block holding the
+/// whole query first, otherwise the block with the most matching words, so a
+/// one-word label never beats the paragraph that explains it. The window
+/// starts at the match itself, which keeps it anchored to the hit.
+String? _excerptFor(
+  HelpTopic topic, {
+  required String query,
+  required List<String> tokens,
+}) {
+  final phrase = query.trim().toLowerCase().replaceAll(_spaceRun, ' ');
+  if (phrase.isEmpty) return null;
+  final needles = <String>{
+    for (final word in [...phrase.split(' '), ...tokens])
+      if (word.isNotEmpty && !_stopWords.contains(word)) word,
+    for (final word in tokens)
+      if (word.isNotEmpty && _stopWords.contains(word)) word,
+  };
+  if (needles.isEmpty) return null;
+
+  String? excerpt;
+  var bestRank = -1;
+  var bestOccurrences = -1;
+  for (final block in topic.blocks) {
+    final text = block.searchText;
+    final lower = text.toLowerCase();
+
+    final phraseIndex = lower.indexOf(phrase);
+    var wordIndex = -1;
+    var wordLength = 0;
+    for (final needle in needles) {
+      final at = lower.indexOf(needle);
+      if (at >= 0 && (wordIndex < 0 || at < wordIndex)) {
+        wordIndex = at;
+        wordLength = needle.length;
+      }
+    }
+    if (phraseIndex < 0 && wordIndex < 0) continue;
+
+    var occurrences = 0;
+    for (final needle in needles) {
+      var from = 0;
+      while (true) {
+        final at = lower.indexOf(needle, from);
+        if (at < 0) break;
+        occurrences++;
+        from = at + needle.length;
+      }
+    }
+
+    final rank = phraseIndex >= 0 ? 2 : 1;
+    if (rank > bestRank ||
+        (rank == bestRank && occurrences > bestOccurrences)) {
+      bestRank = rank;
+      bestOccurrences = occurrences;
+      final start = phraseIndex >= 0 ? phraseIndex : wordIndex;
+      final length = phraseIndex >= 0 ? phrase.length : wordLength;
+      excerpt = _excerptWindow(text, start, length);
+    }
+  }
+  return excerpt;
+}
+
+/// Cuts [length] characters of [text] from [start] out as a readable passage.
+/// The window opens exactly at the match and keeps a little of what follows.
+String _excerptWindow(String text, int start, int length) {
+  const keepAfter = 110;
+  final end = math.min(text.length, start + length + keepAfter);
+  final head = start > 0 ? '… ' : '';
+  final tail = end < text.length ? ' …' : '';
+  return '$head${text.substring(start, end)}$tail';
+}
+
+/// A pattern matching the meaningful words of [query] as they appear in the
+/// guide, used to emphasise the hit inside an excerpt; null when the query
+/// has no letters or digits to highlight.
+RegExp? helpHighlightPattern(String query) {
+  final words = <String>{};
+  for (final word in query.toLowerCase().split(_spaceRun)) {
+    if (word.isNotEmpty && !_stopWords.contains(word)) words.add(word);
+  }
+  if (words.isEmpty) {
+    for (final word in query.toLowerCase().split(_spaceRun)) {
+      if (word.isNotEmpty) words.add(word);
+    }
+  }
+  if (words.isEmpty) return null;
+  return RegExp(words.map(RegExp.escape).join('|'), caseSensitive: false);
+}

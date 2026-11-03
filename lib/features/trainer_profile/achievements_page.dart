@@ -51,7 +51,10 @@ const List<_Category> _categories = [
   ]),
 ];
 
-const Map<String, IconData> _icons = {
+/// Icon for each achievement id, shared by the badges here and the unlock
+/// announcement in [AchievementUnlocks]. Ids without an entry fall back to
+/// the trophy.
+const Map<String, IconData> achievementIcons = {
   'first_contact': Icons.visibility_outlined,
   'field_researcher': Icons.explore_outlined,
   'cataloguer': Icons.menu_book_outlined,
@@ -397,7 +400,7 @@ class _Badge extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Icon(
-            _icons[achievement.id] ?? Icons.emoji_events_outlined,
+            achievementIcons[achievement.id] ?? Icons.emoji_events_outlined,
             size: size * 0.5,
             color: unlocked
                 ? (gradient ? const Color(0xFF0A0E12) : color)

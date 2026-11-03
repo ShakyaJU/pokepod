@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/audio/sound_service.dart';
 import '../data/providers.dart';
 import '../features/trainer_profile/profile_controller.dart';
+import 'focus_policy.dart';
 import 'shell.dart';
 import 'theme/app_theme.dart';
 import 'theme/system_ui.dart';
@@ -40,6 +41,9 @@ class PokePodApp extends ConsumerWidget {
       // One place for status-bar and navigation-bar styling in both themes.
       builder: (context, child) =>
           SystemUiScope(child: child ?? const SizedBox.shrink()),
+      // Releases text focus at route boundaries so a keyboard is never
+      // carried into or out of a screen (see focus_policy.dart).
+      navigatorObservers: [FocusReleaseObserver()],
       home: _SplashGate(duration: splashDuration),
     );
   }

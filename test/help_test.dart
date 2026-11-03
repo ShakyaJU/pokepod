@@ -93,6 +93,73 @@ void main() {
     });
   });
 
+  group('Help search', () {
+    test('every acceptance query ranks its own topic first', () {
+      const expectedTop = <String, String>{
+        'Accent Color': 'Settings',
+        'Theme Mode': 'Settings',
+        'Notifications': 'Streak reminders and notifications',
+        'Sound Effects': 'Troubleshooting and FAQ',
+        'Backup and Restore': 'Backing up and restoring',
+        "Who's That Pokémon?": "Who's That Pokémon?",
+        'Achievements': 'Achievements',
+        'Living Dex': 'Living Dex and research',
+        'Research Progress': 'Living Dex and research',
+        'Collections': 'Collections and favourites',
+        'Home-screen Widgets': 'Home-screen widgets',
+        'Pokémon Comparison': 'Pokémon DNA',
+        'Team Architect': 'Battle Lab',
+      };
+
+      for (final entry in expectedTop.entries) {
+        final results = searchHelp(entry.key);
+        expect(
+          results,
+          isNotEmpty,
+          reason: '"${entry.key}" must find something',
+        );
+        expect(
+          results.first.topic.title,
+          contains(entry.value),
+          reason: '"${entry.key}" must rank $entry.value first',
+        );
+      }
+    });
+
+    test('case, spacing, partial terms and junk are handled', () {
+      expect(searchHelp('zzzzqq'), isEmpty);
+      expect(searchHelp(''), hasLength(kHelpTopics.length));
+      expect(searchHelp('accent color').first.topic.id, 'settings');
+      expect(searchHelp('  ACCENT   COLOR  ').first.topic.id, 'settings');
+      final ids = [for (final r in searchHelp('streak')) r.topic.id];
+      expect(ids.toSet(), hasLength(ids.length), reason: 'no duplicates');
+      // Partial words still hit.
+      expect(searchHelp('restor').first.topic.id, 'backup');
+      // The stop word "and" never drags in a section that only says "Android".
+      expect(
+        searchHelp('Backup and Restore').map((r) => r.topic.id),
+        isNot(contains('troubleshooting')),
+      );
+    });
+
+    test('an excerpt starts exactly where the match is', () {
+      final first = searchHelp('Accent Color').first;
+      expect(first.excerpt, isNotNull);
+      expect(first.excerpt, contains('Accent Color'));
+      // The window opens on the match itself; a leading ellipsis only marks
+      // that there is earlier text in the topic.
+      expect(first.excerpt!.replaceFirst('… ', ''), startsWith('Accent Color'));
+    });
+
+    test('matches() still agrees with the search', () {
+      for (final topic in kHelpTopics) {
+        expect(topic.matches(topic.title), isTrue, reason: topic.id);
+      }
+      expect(kHelpTopics.any((t) => t.matches('clipboard')), isTrue);
+      expect(kHelpTopics.any((t) => t.matches('zzzzqq')), isFalse);
+    });
+  });
+
   group('Help page', () {
     Future<void> pumpHelp(WidgetTester tester) async {
       tester.view.physicalSize = const Size(900, 2200);

@@ -376,7 +376,9 @@ class _DossierBody extends ConsumerWidget {
 
   Future<void> _addToCollection(BuildContext context, WidgetRef ref) async {
     final collections = ref.read(collectionsProvider);
-    final nameController = TextEditingController();
+    // The sheet reads the new name straight from the field: a controller made
+    // here would outlive the sheet without ever being disposed.
+    var newName = '';
     final result = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -408,11 +410,11 @@ class _DossierBody extends ConsumerWidget {
               ),
             const SizedBox(height: Space.sm),
             TextField(
-              controller: nameController,
               decoration: const InputDecoration(
                 labelText: 'Or create a new collection',
                 border: OutlineInputBorder(),
               ),
+              onChanged: (v) => newName = v,
               onSubmitted: (v) {
                 if (v.trim().isNotEmpty) {
                   Navigator.of(sheetContext).pop('new:${v.trim()}');
@@ -422,7 +424,7 @@ class _DossierBody extends ConsumerWidget {
             const SizedBox(height: Space.sm),
             FilledButton(
               onPressed: () {
-                final v = nameController.text.trim();
+                final v = newName.trim();
                 if (v.isNotEmpty) {
                   Navigator.of(sheetContext).pop('new:$v');
                 }

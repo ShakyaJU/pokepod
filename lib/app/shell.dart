@@ -8,6 +8,7 @@ import '../core/audio/sound_service.dart';
 import '../core/storage/local_store.dart';
 import '../data/providers.dart';
 import '../domain/mystery_logic.dart';
+import 'focus_policy.dart';
 import '../features/analysis/lab_page.dart';
 import '../features/collections/collections_page.dart';
 import '../features/discover/discover_page.dart';
@@ -18,6 +19,8 @@ import '../features/notifications/notification_service.dart';
 import '../features/notifications/notifications_controller.dart';
 import '../features/pokedex/pokedex_page.dart';
 import '../features/pokemon_detail/dossier_page.dart';
+import '../features/trainer_profile/achievement_unlocks.dart';
+import '../features/trainer_profile/profile_controller.dart';
 import '../features/trainer_profile/profile_page.dart';
 import '../features/widgets/specimen_widget_sync.dart';
 import 'theme/tokens.dart';
@@ -49,6 +52,9 @@ class _HomeShellState extends ConsumerState<HomeShell>
 
   /// Guards against opening the specimen dossier twice from widget taps.
   bool _specimenRouteOpen = false;
+
+  /// Diff-and-queue tracker for achievement unlock notifications.
+  final _unlocks = AchievementUnlocks();
 
   /// Native channel: widget taps deliver a route name here (MainActivity
   /// holds it until Dart asks, so cold-start taps are not lost).
@@ -223,6 +229,23 @@ class _HomeShellState extends ConsumerState<HomeShell>
     );
   }
 
+  /// Shows a queued achievement unlock once the current frame is done, so a
+  /// change that arrives while the tree is building never mutates the
+  /// messenger mid-build. The frame is requested explicitly because the
+  /// provider change alone does not always schedule one.
+  void _scheduleUnlockDisplay() {
+    if (!_unlocks.hasPending) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _unlocks.showNext(messenger);
+      }
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   Widget _page(int i) {
     switch (i) {
       case 0:
@@ -259,7 +282,16 @@ class _HomeShellState extends ConsumerState<HomeShell>
   @override
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
-    ref.listen<int>(navIndexProvider, (previous, next) => _syncPager(next));
+    ref.listen<int>(navIndexProvider, (previous, next) {
+      _syncPager(next);
+      // The tabs are kept alive by the PageView, so a focused field on the
+      // leaving tab would otherwise carry its keyboard into the destination
+      // tab (Discover has no text input of its own). Releasing focus here
+      // dismisses the keyboard exactly when the section changes.
+      if (previous != next) {
+        releaseTextFocus();
+      }
+    });
     // Any change to the game state, the day or the notification choices can
     // make the pending streak reminder relevant or obsolete.
     final container = ProviderScope.containerOf(context);
@@ -288,6 +320,19 @@ class _HomeShellState extends ConsumerState<HomeShell>
     ref.listen(pokemonDetailProvider(specimenId), (_, next) {
       if (!next.isLoading) {
         unawaited(ref.read(specimenWidgetProvider.notifier).refresh());
+      }
+    });
+    // Achievement unlocks. Every input is read synchronously from prefs by
+    // the notifiers behind achievementsProvider, so the first observation is
+    // the final baseline for this run: anything already unlocked is never
+    // announced. Later changes are diffed and only real locked → unlocked
+    // transitions are queued, one notification at a time.
+    if (_unlocks.observe(ref.read(achievementsProvider)).isNotEmpty) {
+      _scheduleUnlockDisplay();
+    }
+    ref.listen(achievementsProvider, (_, next) {
+      if (_unlocks.observe(next).isNotEmpty) {
+        _scheduleUnlockDisplay();
       }
     });
 

@@ -18,17 +18,20 @@ Future<String?> _askName(
   required String title,
   String initial = '',
 }) {
-  final controller = TextEditingController(text: initial);
+  // The field owns its text (TextFormField disposes the controller it makes),
+  // so this helper never holds one it would have to dispose itself.
+  var text = initial;
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
-      content: TextField(
-        controller: controller,
+      content: TextFormField(
+        initialValue: initial,
         autofocus: true,
         textCapitalization: TextCapitalization.words,
         decoration: const InputDecoration(labelText: 'Name'),
-        onSubmitted: (v) => Navigator.of(context).pop(v),
+        onChanged: (v) => text = v,
+        onFieldSubmitted: (v) => Navigator.of(context).pop(v),
       ),
       actions: [
         TextButton(
@@ -36,7 +39,7 @@ Future<String?> _askName(
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(controller.text),
+          onPressed: () => Navigator.of(context).pop(text),
           child: const Text('Save'),
         ),
       ],
