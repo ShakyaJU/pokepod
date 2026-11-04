@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +50,10 @@ class FakeScheduler implements StreakReminderScheduler {
   @override
   Future<bool> requestPermission() async {
     permissionRequests++;
+    // A real answer changes what the permission check reports from then on,
+    // so the fake does too: granted means areNotificationsEnabled() is now
+    // true, denied means it stays false.
+    enabled = permissionGranted;
     return permissionGranted;
   }
 
@@ -415,38 +420,58 @@ void main() {
     );
   });
 
-  group('Settings: Notifications section', () {
-    Future<(ProviderContainer, FakeScheduler)> pumpSection(
-      WidgetTester tester, {
-      bool masterOn = false,
-      bool streakReminderOn = true,
-      bool osAllows = false,
-    }) async {
-      final fake = FakeScheduler()..enabled = osAllows;
-      final preferences = await mockPrefs({
-        'notifications.v1': jsonEncode({
-          'enabled': masterOn,
-          'streakReminder': streakReminderOn,
-          'asked': true,
+  /// Pumps the Notifications section of Settings against a fake scheduler.
+  /// [now] fixes the clock so the 8pm reminder window is always open, and
+  /// [withStreak] seeds yesterday's win so there is a streak worth protecting.
+  Future<(ProviderContainer, FakeScheduler)> pumpSection(
+    WidgetTester tester, {
+    bool masterOn = false,
+    bool streakReminderOn = true,
+    bool osAllows = false,
+    bool permissionGranted = true,
+    bool withStreak = false,
+    DateTime? now,
+  }) async {
+    final fake = FakeScheduler()
+      ..enabled = osAllows
+      ..permissionGranted = permissionGranted;
+    final preferences = await mockPrefs({
+      // Yesterday's win, so there is a live streak worth reminding about.
+      if (withStreak)
+        'mystery.v1': jsonEncode({
+          'v': 2,
+          'history': {
+            kYesterday: {'g': 1, 'w': true, 't': 25},
+          },
         }),
-      });
-      final container = makeContainer(
-        preferences,
-        overrides: [notificationServiceProvider.overrideWithValue(fake)],
-      );
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AppTheme.build(Brightness.dark, AppColors.emerald),
-            home: const Scaffold(body: NotificationSettingsSection()),
-          ),
+      'notifications.v1': jsonEncode({
+        'enabled': masterOn,
+        'streakReminder': streakReminderOn,
+        'asked': true,
+      }),
+    });
+    final container = makeContainer(
+      preferences,
+      overrides: [
+        notificationServiceProvider.overrideWithValue(fake),
+        // Fixed to the afternoon, so the 8pm window is always open.
+        clockProvider.overrideWithValue(() => now ?? kAfternoon),
+      ],
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.build(Brightness.dark, AppColors.emerald),
+          home: const Scaffold(body: NotificationSettingsSection()),
         ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      return (container, fake);
-    }
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    return (container, fake);
+  }
 
+  group('Settings: Notifications section', () {
     testWidgets('it renders both switches with the stored choices', (
       tester,
     ) async {
@@ -622,6 +647,170 @@ void main() {
       expect(fake.permissionRequests, 1);
       expect(container.read(notificationsPrefsProvider).enabled, isFalse);
       expect(container.read(notificationsPrefsProvider).asked, isTrue);
+    });
+  });
+
+  group('Settings: turning notifications on', () {
+    // The permission flow only exists on real notification platforms, so the
+    // two platform gates are opened for this group and closed afterwards.
+    setUp(() {
+      debugNotificationsSupported = true;
+      debugCanOpenSystemNotificationSettings = true;
+    });
+    tearDown(() {
+      debugNotificationsSupported = null;
+      debugCanOpenSystemNotificationSettings = null;
+    });
+
+    testWidgets('the system is explained to before it is ever asked', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(tester, withStreak: true);
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      // The explanation is on screen and the OS has not been asked yet.
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Allow notifications?'), findsOneWidget);
+      expect(find.textContaining('stay on this device'), findsOneWidget);
+      expect(fake.permissionRequests, 0);
+      expect(container.read(notificationsPrefsProvider).enabled, isFalse);
+
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(fake.permissionRequests, 1);
+      expect(container.read(notificationsPrefsProvider).enabled, isTrue);
+      expect(
+        fake.scheduleCalls,
+        1,
+        reason: 'a granted permission arms the reminder immediately',
+      );
+      expect(find.text('Notifications are blocked'), findsNothing);
+    });
+
+    testWidgets('"Not now" asks nothing and leaves everything off', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(tester, withStreak: true);
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(fake.permissionRequests, 0);
+      expect(container.read(notificationsPrefsProvider).enabled, isFalse);
+      expect(fake.scheduleCalls, 0);
+      expect(fake.pending, 0);
+    });
+
+    testWidgets('a denial records the choice and shows the way to fix it', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(
+        tester,
+        withStreak: true,
+        permissionGranted: false,
+      );
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(fake.permissionRequests, 1);
+      expect(
+        container.read(notificationsPrefsProvider).enabled,
+        isTrue,
+        reason: 'the choice is recorded; the notice explains the rest',
+      );
+      expect(find.text('Notifications are blocked'), findsOneWidget);
+      expect(find.text('Open settings'), findsOneWidget);
+      expect(
+        fake.scheduleCalls,
+        0,
+        reason: 'nothing can be delivered without the system permission',
+      );
+      expect(fake.pending, 0);
+    });
+
+    testWidgets('when the system already allows it, no prompt appears', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(
+        tester,
+        withStreak: true,
+        osAllows: true,
+      );
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(
+        fake.permissionRequests,
+        0,
+        reason: 'there is nothing left to ask for',
+      );
+      expect(container.read(notificationsPrefsProvider).enabled, isTrue);
+    });
+
+    testWidgets('granting in Android settings arms the reminder on return', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(
+        tester,
+        masterOn: true,
+        withStreak: true,
+        osAllows: false,
+      );
+      expect(find.text('Notifications are blocked'), findsOneWidget);
+      expect(fake.scheduleCalls, 0);
+
+      // The user grants the permission in Android's own settings screen and
+      // comes back: no in-app preference moves, so only re-checking the real
+      // state here can arm the reminder without waiting for a restart.
+      fake.enabled = true;
+      // The deep link crosses a platform channel that only the real Android
+      // side answers; stand in for MainActivity here.
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('pokepod/platform'),
+        (call) async => true,
+      );
+      await tester.tap(find.text('Open settings'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Notifications are blocked'), findsNothing);
+      expect(
+        fake.scheduleCalls,
+        1,
+        reason: 'the granted permission is acted on straight away',
+      );
+      expect(fake.pending, 1);
+      expect(container.read(notificationsPrefsProvider).enabled, isTrue);
+    });
+
+    testWidgets('switching notifications off withdraws the reminder', (
+      tester,
+    ) async {
+      final (container, fake) = await pumpSection(
+        tester,
+        masterOn: true,
+        withStreak: true,
+        osAllows: true,
+      );
+
+      await tester.tap(find.byType(Switch).first);
+      await tester.pumpAndSettle();
+
+      expect(container.read(notificationsPrefsProvider).enabled, isFalse);
+      expect(fake.cancelCalls, greaterThanOrEqualTo(1));
+      expect(fake.pending, 0);
+      expect(fake.scheduleCalls, 0);
     });
   });
 }

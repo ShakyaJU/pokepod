@@ -107,5 +107,8 @@ $RECYCLE.BIN/
 # Flutter version manager (not used, ignored defensively)
 .fvm/
 
-# Duplicate local project snapshot (superseded working copy, kept on disk only)
-pokepod/
+# Duplicate local project snapshot (superseded working copy, kept on disk only).
+# Anchored to the repo root on purpose: an unanchored "pokepod/" also matches
+# android/app/src/main/kotlin/com/shakyaju/pokepod/, which would silently drop
+# the whole Kotlin layer (MainActivity, receivers, widget provider) from git.
+/pokepod/

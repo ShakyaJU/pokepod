@@ -30,6 +30,16 @@ String streakReminderTitle() => 'Your Pokémon streak needs you! 🔥';
 String streakReminderBody(int streak) =>
     'Your $streak-day streak is waiting. Play today\'s challenge before it expires!';
 
+/// The absolute instant Android should fire at for the local moment [when].
+///
+/// The device's zone only decides how that instant is *written down*: the
+/// wall-clock string and the zone name sent to the plugin always come from
+/// the same [tz.TZDateTime], so they always agree and the moment itself
+/// never moves — even when the zone fell back to UTC because the device's
+/// zone could not be read.
+tz.TZDateTime reminderInstant(DateTime when) =>
+    tz.TZDateTime.from(when, tz.local);
+
 /// Abstraction over the platform notification plugin, mirroring the app's
 /// [SoundBackend] pattern: all logic can be tested with a fake, and tests
 /// never touch platform channels.
@@ -73,56 +83,83 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
 
   final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
+
+  /// The one in-flight setup, shared by concurrent callers (bootstrap, launch
+  /// details, scheduling) and cleared when it finishes so a failure can be
+  /// retried rather than remembered.
+  Future<void>? _initializing;
   void Function(String payload)? _onOpened;
 
   @override
   set onOpened(void Function(String payload)? callback) => _onOpened = callback;
 
   @override
-  Future<void> init() async {
+  Future<void> init() {
     if (_initialized || !notificationsSupported) {
-      return;
+      return Future.value();
     }
-    _initialized = true;
-    await _initTimezone();
-    await _plugin.initialize(
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@drawable/notification_icon'),
-        // request*Permission is false everywhere: the OS is only ever asked
-        // when the user taps "Enable notifications" or flips the switch in
-        // Settings, never just because PokéPod started. (Without these two
-        // blocks the plugin throws on iOS/macOS and reminders silently stop
-        // working there.)
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false,
-        ),
-        macOS: DarwinInitializationSettings(
-          requestAlertPermission: false,
-          requestBadgePermission: false,
-          requestSoundPermission: false,
-        ),
-      ),
-      onDidReceiveNotificationResponse: (response) {
-        final payload = response.payload;
-        if (payload != null) {
-          _onOpened?.call(payload);
-        }
-      },
-    );
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(
-          const AndroidNotificationChannel(
-            kStreakReminderChannelId,
-            kStreakReminderChannelName,
-            description: kStreakReminderChannelDescription,
-            importance: Importance.high,
+    return _initializing ??= _setup();
+  }
+
+  /// Prepares timezone data, the plugin and the channel. It never throws:
+  /// every caller treats setup as best-effort, and a failure is logged and
+  /// left un-initialised — marking the work as done before it happened would
+  /// disable reminders for the rest of the session after one transient error,
+  /// which is exactly how scheduling gets skipped without a trace.
+  Future<void> _setup() async {
+    try {
+      await _initTimezone();
+      await _plugin.initialize(
+        settings: const InitializationSettings(
+          android: AndroidInitializationSettings('@drawable/notification_icon'),
+          // request*Permission is false everywhere: the OS is only ever asked
+          // when the user taps "Enable notifications" or flips the switch in
+          // Settings, never just because PokéPod started. (Without these two
+          // blocks the plugin throws on iOS/macOS and reminders silently stop
+          // working there.)
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
           ),
-        );
+          macOS: DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          ),
+        ),
+        onDidReceiveNotificationResponse: (response) {
+          final payload = response.payload;
+          if (payload != null) {
+            _onOpened?.call(payload);
+          }
+        },
+      );
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(
+            const AndroidNotificationChannel(
+              kStreakReminderChannelId,
+              kStreakReminderChannelName,
+              description: kStreakReminderChannelDescription,
+              importance: Importance.high,
+              // Android 8+ plays the channel's sound and ignores the
+              // per-notification one, so the bundled reminder sound has to live
+              // here to be heard. A channel already created is immutable, so
+              // installs that have one keep the sound they started with.
+              sound: RawResourceAndroidNotificationSound('notification'),
+            ),
+          );
+      _initialized = true;
+    } catch (error) {
+      // Logged, not rethrown: _initialized stays false, so the next
+      // evaluation runs setup again instead of believing it already happened.
+      debugPrint('PokéPod: notification setup failed (will retry): $error');
+    } finally {
+      _initializing = null;
+    }
   }
 
   /// Timezone database plus the device's IANA zone, so scheduled times follow
@@ -132,9 +169,12 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
     try {
       final info = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(info.identifier));
-    } catch (_) {
-      // A missing zone name only affects exotic devices; scheduling below
-      // then falls back to the current UTC offset.
+    } catch (error) {
+      // Scheduling below still fires at the right instant — the wall-clock
+      // string and the zone name sent to Android always come from the same
+      // TZDateTime — but a zone that cannot be read is worth seeing in the
+      // log rather than passing as success.
+      debugPrint('PokéPod: device timezone unavailable ($error)');
     }
   }
 
@@ -166,7 +206,10 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
         return (await mac.checkPermissions())?.isEnabled ?? true;
       }
       return true;
-    } catch (_) {
+    } catch (error) {
+      // Read as "notifications are off", which cancels rather than arms, so
+      // the failure is logged instead of passing as a plain denial.
+      debugPrint('PokéPod: could not read notification permission: $error');
       return false;
     }
   }
@@ -210,7 +253,10 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
             await notificationsEnabled();
       }
       return await notificationsEnabled();
-    } catch (_) {
+    } catch (error) {
+      // Answered with "no", which leaves reminders off — logged so a broken
+      // permission path is not mistaken for the user declining.
+      debugPrint('PokéPod: could not request notification permission: $error');
       return false;
     }
   }
@@ -242,7 +288,7 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
       id: kStreakReminderId,
       title: title,
       body: body,
-      scheduledDate: tz.TZDateTime.from(when, tz.local),
+      scheduledDate: reminderInstant(when),
       notificationDetails: _details,
       // Inexact by design: the OS batches it near the requested time, which
       // respects battery policies and needs no exact-alarm permission.
@@ -258,8 +304,11 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
     }
     try {
       await _plugin.cancel(id: kStreakReminderId);
-    } catch (_) {
-      // Nothing pending is a success.
+    } catch (error) {
+      // A cancel that cannot reach the platform leaves a stale reminder
+      // armed for a situation that no longer holds, so it is logged rather
+      // than passed off as "nothing pending".
+      debugPrint('PokéPod: could not cancel the streak reminder: $error');
     }
   }
 
@@ -271,7 +320,10 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
     try {
       await init();
       return await _plugin.getNotificationAppLaunchDetails();
-    } catch (_) {
+    } catch (error) {
+      // Without launch details a tap on a delivered reminder cannot open the
+      // game, which is worth seeing in the log.
+      debugPrint('PokéPod: could not read the launch details: $error');
       return null;
     }
   }
@@ -280,14 +332,28 @@ class FlutterStreakReminderScheduler implements StreakReminderScheduler {
 /// False on web and on desktop hosts (including test hosts), where no
 /// notification platform exists. Kept as a function so tests can reason about
 /// it independently of any plugin channel.
+///
+/// [debugNotificationsSupported] overrides it so tests can walk the
+/// Android-only permission flow on any host; production never sets it.
+@visibleForTesting
+bool? debugNotificationsSupported;
+
 bool get notificationsSupported =>
-    !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+    debugNotificationsSupported ??
+    (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS));
 
 /// Whether PokéPod can actually jump to the system notification settings.
 /// Only Android is wired up for that (through `pokepod/platform`); on iOS and
 /// macOS the permission has to be changed by hand in the system Settings app,
 /// so Settings never offers a button that would do nothing.
-bool get canOpenSystemNotificationSettings => !kIsWeb && Platform.isAndroid;
+///
+/// [debugCanOpenSystemNotificationSettings] overrides it for the same reason
+/// as [debugNotificationsSupported].
+@visibleForTesting
+bool? debugCanOpenSystemNotificationSettings;
+
+bool get canOpenSystemNotificationSettings =>
+    debugCanOpenSystemNotificationSettings ?? (!kIsWeb && Platform.isAndroid);
 
 /// Opens the app's page in Android's system notification settings, so the
 /// user can grant or revoke the permission that PokéPod itself cannot change.
@@ -299,7 +365,9 @@ Future<void> openSystemNotificationSettings() async {
     await const MethodChannel(
       'pokepod/platform',
     ).invokeMethod('openNotificationSettings');
-  } catch (_) {
-    // Settings are a convenience; failing to open them must not crash.
+  } catch (error) {
+    // Settings are a convenience: failing to open them must not crash, but
+    // it does mean the user is stuck, so it is logged.
+    debugPrint('PokéPod: could not open the notification settings: $error');
   }
 }

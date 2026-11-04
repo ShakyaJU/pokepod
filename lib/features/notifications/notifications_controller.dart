@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -154,7 +155,10 @@ Future<void> refreshStreakReminder(ProviderContainer container) async {
   var granted = false;
   try {
     granted = prefs.enabled && await service.notificationsEnabled();
-  } catch (_) {
+  } catch (error) {
+    // Treated as "not allowed", which cancels — so a broken permission read
+    // must be visible instead of looking like the user saying no.
+    debugPrint('PokéPod: could not read notification permission: $error');
     granted = false;
   }
 
@@ -179,7 +183,10 @@ Future<void> refreshStreakReminder(ProviderContainer container) async {
       body: streakReminderBody(streaks.current),
       payload: kReminderPayloadMystery,
     );
-  } catch (_) {
-    // Scheduling is best-effort: a failure must never disturb the app.
+  } catch (error) {
+    // Scheduling is best-effort: a failure must never disturb the app, but
+    // it must not be invisible either — a swallowed scheduling error is
+    // exactly how "notifications do not arrive" goes unexplained.
+    debugPrint('PokéPod: could not update the streak reminder: $error');
   }
 }

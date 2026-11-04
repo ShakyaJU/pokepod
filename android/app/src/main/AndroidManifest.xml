@@ -67,6 +67,28 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
+
+        <!-- flutter_local_notifications delivers a scheduled reminder by firing
+             an AlarmManager broadcast at ScheduledNotificationReceiver. The
+             plugin's own manifest declares no receivers, so without the two
+             entries below the alarm fires into nothing: zonedSchedule() still
+             succeeds, no error is raised anywhere, and the notification simply
+             never appears. The boot receiver re-arms whatever was pending when
+             the phone restarts or the app updates (the RECEIVE_BOOT_COMPLETED
+             permission is declared at the top of this file). -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

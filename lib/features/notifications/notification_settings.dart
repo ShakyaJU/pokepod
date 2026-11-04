@@ -33,18 +33,104 @@ class _NotificationSettingsSectionState
     if (!notificationsSupported) {
       return;
     }
-    final enabled = await ref
-        .read(notificationServiceProvider)
-        .notificationsEnabled();
+    bool allowed;
+    try {
+      allowed = await ref
+          .read(notificationServiceProvider)
+          .notificationsEnabled();
+    } catch (error) {
+      debugPrint('PokéPod: could not read notification permission: $error');
+      allowed = false;
+    }
     if (mounted) {
-      setState(() => _granted = enabled);
+      setState(() => _granted = allowed);
+    }
+  }
+
+  /// Re-reads the real permission state and re-evaluates the reminder, so
+  /// every change made from this page — or in Android's own settings screen,
+  /// which is the usual way the permission moves — takes effect now instead
+  /// of at the next launch.
+  Future<void> _recheckAndRefresh() async {
+    if (!mounted) {
+      return;
+    }
+    await _refreshPermission();
+    if (mounted) {
+      await refreshStreakReminder(ProviderScope.containerOf(context));
     }
   }
 
   Future<void> _openSystemSettings() async {
     await openSystemNotificationSettings();
     if (mounted) {
-      await _refreshPermission();
+      await _recheckAndRefresh();
+    }
+  }
+
+  /// The master switch. Turning it off takes effect immediately; turning it
+  /// on checks the real OS state first and, when notifications are not
+  /// allowed yet, explains why PokéPod needs the permission before the
+  /// system prompt can appear — the OS is only ever asked from that explicit
+  /// choice, never on its own.
+  Future<void> _setMaster(bool value) async {
+    final notifier = ref.read(notificationsPrefsProvider.notifier);
+    if (!value) {
+      notifier.setEnabled(false);
+      await _recheckAndRefresh();
+      return;
+    }
+    if (await _osAllowsNotifications()) {
+      notifier.setEnabled(true);
+      await _recheckAndRefresh();
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Allow notifications?'),
+        content: const Text(
+          'PokéPod needs Android\'s notification permission to send your '
+          'optional reminders. They stay on this device — nothing is '
+          'uploaded — and you can turn them off whenever you like.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) {
+      // Nothing was enabled and nothing was asked: the switch stays off.
+      return;
+    }
+    // The preference goes on even when the system says no, so the blocked
+    // notice below can point at the system settings instead of the switch
+    // quietly hiding a state the user asked for.
+    notifier.setEnabled(true);
+    try {
+      await ref.read(notificationServiceProvider).requestPermission();
+    } catch (error) {
+      debugPrint('PokéPod: could not request notification permission: $error');
+    }
+    await _recheckAndRefresh();
+  }
+
+  Future<bool> _osAllowsNotifications() async {
+    try {
+      return await ref.read(notificationServiceProvider).notificationsEnabled();
+    } catch (error) {
+      debugPrint('PokéPod: could not read notification permission: $error');
+      return false;
     }
   }
 
@@ -71,12 +157,7 @@ class _NotificationSettingsSectionState
                     : 'Notifications are not available on this platform.',
               ),
               value: prefs.enabled,
-              onChanged: notificationsSupported
-                  ? (value) {
-                      notifier.setEnabled(value);
-                      _refreshPermission();
-                    }
-                  : null,
+              onChanged: notificationsSupported ? _setMaster : null,
             ),
             if (blocked) ...[
               const Divider(height: 1),
