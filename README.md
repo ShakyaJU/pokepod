@@ -759,12 +759,10 @@ This license applies to the original code authored for this project. Pokémon-re
 > **Disclaimer:** PokéPod is an unofficial fan project. It is not affiliated with, endorsed by or sponsored by Nintendo, The Pokémon Company or Game Freak. Pokémon and related names, characters and artwork are trademarks and copyrights of their respective owners. This repository does not claim ownership of any Pokémon intellectual property.
 
 ---
-<!--
+
 <div align="center">
-
+<!--
 <a href="https://drive.google.com/file/d/1mC15HkOd97j_yW7tOFx_2wqBNsXa5Kaf/view?usp=sharing"><img src="https://img.shields.io/badge/%E2%96%B6%20%20Watch%20the%20Full%20App%20Demo-02569B?style=for-the-badge" alt="Watch the full PokéPod app demo"></a>
-
-<br><br>
 -->
 Built with Flutter by [ShakyaJU](https://github.com/ShakyaJU)
 
