@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Resources that are referenced only by name at runtime.
+
+  PokéPod hands these two drawables to flutter_local_notifications as *strings*
+  from Dart (lib/features/notifications/notification_service.dart):
+
+      AndroidInitializationSettings('@drawable/notification_icon')   // channel default
+      icon: '@drawable/notification_flame'                           // per-notification
+
+  AAPT2's resource shrinker only inspects references it can see — manifest,
+  layout XML and compiled code — so it stripped both from release builds. On a
+  release device the plugin then failed at startup with
+
+      PlatformException(invalid_icon, The resource @drawable/notification_icon
+      could not be found.)
+
+  and streak reminders never ran (debug builds are not shrunk, so this was
+  release-only). Keeping the two drawables by name restores them without
+  turning resource shrinking off for anything else.
+
+  The widget drawables deliberately need no entry here: widget_card_bg,
+  widget_chip_bg and widget_pokeball are referenced from layout XML, and
+  launch_background from styles.xml, so the shrinker already keeps those.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/notification_icon,@drawable/notification_flame" />

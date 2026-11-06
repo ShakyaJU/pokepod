@@ -4,19 +4,57 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
+import 'app/startup_error.dart';
 import 'core/storage/local_store.dart';
 import 'features/notifications/notifications_controller.dart';
 import 'features/widgets/specimen_widget_sync.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
+
+  // Local storage is essential, but it must never be able to leave the user
+  // staring at a blank screen: `_loadPreferences` reports every failure and
+  // returns null instead of throwing, and we fall back to a retryable error
+  // screen rather than never calling [runApp].
+  final (prefs, failure) = await _loadPreferences();
+  if (prefs == null) {
+    runApp(
+      StartupErrorApp(
+        error: failure ?? 'Local storage failed to load for an unknown reason.',
+        onRetry: main,
+      ),
+    );
+    return;
+  }
+
   runApp(
     ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: const PokePodApp(),
     ),
   );
+}
+
+/// Loads persisted preferences, retrying once so a transient I/O hiccup does
+/// not take the whole app down.
+///
+/// Never throws: returns `(prefs, null)` on success or `(null, error)` with
+/// every attempt written to the log, so a startup failure is always
+/// diagnosable from `adb logcat -s flutter`.
+Future<(SharedPreferences?, Object?)> _loadPreferences() async {
+  Object? lastFailure;
+  for (var attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return (await SharedPreferences.getInstance(), null);
+    } catch (error, stackTrace) {
+      lastFailure = error;
+      debugPrint(
+        'PokéPod: SharedPreferences load failed (attempt $attempt/2): '
+        '$error\n$stackTrace',
+      );
+    }
+  }
+  return (null, lastFailure);
 }
 
 /// Work performed by the brief headless engine the native daily alarm starts
