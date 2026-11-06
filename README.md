@@ -712,7 +712,7 @@ Last recorded verification run: Flutter 3.47.4 on Windows, JDK 21, Android SDK 3
 | `flutter pub get` | Pass |
 | `dart format lib test` | Pass (89 files, 0 changed) |
 | `flutter analyze` | Pass: no issues found |
-| `flutter test` | Pass: 327 tests |
+| `flutter test` | Pass: 373 tests |
 | Android debug APK | Pass |
 | Android release APK | Pass |
 | iOS, web, macOS, Linux, Windows | **Not built or tested** |
