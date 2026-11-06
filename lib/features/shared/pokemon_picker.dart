@@ -94,13 +94,14 @@ class _PickerSheetState extends ConsumerState<_PickerSheet> {
                       message: 'Try another name or number.',
                     );
                   }
-                  final shown = matches.length > 80
-                      ? matches.sublist(0, 80)
-                      : matches;
+                  // Every match is offered, all the way to #1025. The list is
+                  // built lazily, so only the rows on screen (plus a small
+                  // cache) exist at any moment — no cap is needed to keep it
+                  // smooth, and a cap here silently hid most of the Pokédex.
                   return ListView.builder(
-                    itemCount: shown.length,
+                    itemCount: matches.length,
                     itemBuilder: (context, i) {
-                      final p = shown[i];
+                      final p = matches[i];
                       return ListTile(
                         leading: PokemonArtwork(id: p.id, size: 44),
                         title: Text(p.displayName),
