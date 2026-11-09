@@ -614,6 +614,37 @@ The answer is saved the first time a day is opened, so it cannot change. A finis
 
 <a id="tech-stack"></a>
 
+---
+
+## ✨ Latest Updates & Improvements
+
+PokéPod continues to evolve with new features, usability enhancements, and improvements to the overall user experience.
+
+### 🛡️ Pokémon Defense Profile
+- Added a dedicated **Defense Profile** to every Pokémon detail page.
+- Displays defensive type matchups, including weaknesses, resistances, and immunities.
+- Supports combined type-effectiveness calculations for dual-type Pokémon.
+- Integrated directly into Pokémon profiles, below Moves and above Evolution.
+
+### 🚀 First-Launch Onboarding
+- Introduced a guided onboarding experience for new users.
+- Provides an interactive introduction to PokéPod's main features, including Discover, Pokédex, Lab, Collection, and Daily Challenge.
+- Includes step-by-step navigation, progress indicators, and skip functionality.
+- Saves onboarding completion to prevent repeatedly displaying the introduction.
+
+### 🎮 Who's That Pokémon? – UI Improvements
+- Improved the daily challenge gameplay layout.
+- Repositioned the **Make a Guess** button immediately above the Clues section for better visibility and accessibility.
+- Refined the responsive layout for a more consistent experience across Android screen sizes.
+
+### 🔔 Daily Streak Reminder Improvements
+- Schedules streak reminders **3 hours before the daily challenge resets**.
+- Aligns reminder scheduling with the application's daily reset logic and timezone.
+- Handles reminder eligibility based on daily challenge completion to avoid unnecessary notifications.
+- Improves scheduling reliability and prevents duplicate reminders where supported by the implementation.
+
+---
+
 # Tech stack
 
 <p>
