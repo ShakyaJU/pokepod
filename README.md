@@ -460,7 +460,7 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 </td>
   </tr>
 </table>
----
+
 <a id="notifications"></a>
 
 ### Notifications and sound
