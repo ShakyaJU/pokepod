@@ -663,6 +663,11 @@ PokéPod continues to evolve with new features, usability enhancements, and impr
 - Handles reminder eligibility based on daily challenge completion to avoid unnecessary notifications.
 - Improves scheduling reliability and prevents duplicate reminders where supported by the implementation.
 
+### 🔊 Sound Effects Control
+- Added a dedicated **Sound Effects** toggle in Settings.
+- Allows users to enable or disable sound playback throughout the app.
+- Saves the selected preference across application restarts.
+
 ---
 
 # Tech stack
