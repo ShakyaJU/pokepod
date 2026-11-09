@@ -19,7 +19,7 @@
 <img src="https://img.shields.io/badge/Project-Unofficial%20fan%20project-FFD700" alt="Unofficial fan project">
 </p>
 
-<p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 373 tests</b></p>
+<p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 396 tests</b></p>
 
 <p>
   <a href="https://drive.google.com/file/d/1mC15HkOd97j_yW7tOFx_2wqBNsXa5Kaf/view?usp=sharing"><img src="https://img.shields.io/badge/%E2%96%B6%20%20Watch%20the%20Full%20App%20Demo-02569B?style=for-the-badge" alt="Watch the full PokéPod app demo"></a>
@@ -743,7 +743,7 @@ Last recorded verification run: Flutter 3.47.4 on Windows, JDK 21, Android SDK 3
 | `flutter pub get` | Pass |
 | `dart format lib test` | Pass (89 files, 0 changed) |
 | `flutter analyze` | Pass: no issues found |
-| `flutter test` | Pass: 373 tests |
+| `flutter test` | Pass: 396 tests |
 | Android debug APK | Pass |
 | Android release APK | Pass |
 | iOS, web, macOS, Linux, Windows | **Not built or tested** |
