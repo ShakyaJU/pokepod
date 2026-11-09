@@ -460,7 +460,7 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 </td>
   </tr>
 </table>
-
+---
 <a id="notifications"></a>
 
 ### Notifications and sound
@@ -477,7 +477,7 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 
 - Daily reminders to encourage regular Pokédex exploration.
 - A **Who's That Pokémon?** streak reminder to help users maintain their daily streak.
-- Streak reminders scheduled **3 hours before the daily challenge resets**.
+- Streak reminders scheduled **a specific time-range before the daily challenge resets**.
 - Uses the device's local time zone for scheduling.
 - An in-app explanation is displayed before requesting system notification permission.
 - Uses local notifications, so no remote push notification service is required.
@@ -495,7 +495,7 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 
 - Short audio effects for the app's splash screen and **Who's That Pokémon?** daily challenge.
 - Audio feedback for correct and incorrect guesses.
-- Sound playback can be enabled or disabled through Settings.
+<!--- Sound playback can be enabled or disabled through Settings.-->
 - Audio playback is managed when the app is paused or moved to the background.
 
     </td>
