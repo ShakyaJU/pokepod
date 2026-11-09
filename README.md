@@ -505,11 +505,10 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 
 Sound effects provide subtle audio feedback during key app interactions without interfering with normal navigation or gameplay.
 
-   
+<sub>Animated previews are not currently available for these features.</sub>
+
   </tr>
 </table>
-
-<sub>Animated previews are not currently available for these features.</sub>
 
 ---
 
