@@ -483,6 +483,12 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 - Uses local notifications, so no remote push notification service is required.
 
     </td>
+    <td width="50%" align="center" valign="middle">
+      <img src="pokepod-gifs/notifications.jpg" alt="PokéPod daily and streak notification reminders" width="260"><br>
+      <sub><b>Notifications</b> · daily reminders and streak alerts</sub>
+    </td>
+  </tr>
+  <tr>
     <td width="50%" valign="top">
 
 **🔊 In-app sound effects**
@@ -493,14 +499,17 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 - Audio playback is managed when the app is paused or moved to the background.
 
     </td>
+    <td width="50%" valign="middle">
+
+**Designed for a more engaging experience.**
+
+Sound effects provide subtle audio feedback during key app interactions without interfering with normal navigation or gameplay.
+
+    </td>
   </tr>
 </table>
 
 <sub>Animated previews are not currently available for these features.</sub>
-
----
-
-<a id="your-data"></a>
 
 ---
 
