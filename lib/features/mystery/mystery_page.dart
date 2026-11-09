@@ -164,19 +164,6 @@ class _MysteryPageState extends ConsumerState<MysteryPage> {
                 ),
               ),
             if (!completed) ...[
-              detail.when(
-                loading: () => const SkeletonBox(height: 120),
-                error: (e, _) => ErrorRetry(
-                  error: e,
-                  onRetry: () {
-                    ref.invalidate(pokemonDetailProvider(answerId));
-                    ref.invalidate(speciesProvider(answerId));
-                  },
-                ),
-                data: (d) =>
-                    _Clues(detail: d, species: species, revealed: revealed),
-              ),
-              const SizedBox(height: Space.md),
               if (guesses.isNotEmpty) ...[
                 const SectionLabel('Your guesses'),
                 Wrap(
@@ -224,6 +211,22 @@ class _MysteryPageState extends ConsumerState<MysteryPage> {
                     : null,
                 icon: const Icon(Icons.search),
                 label: const Text('Make a guess'),
+              ),
+              const SizedBox(height: Space.md),
+              // The one control the game needs sits directly above the clues
+              // it unlocks, so it is never buried underneath six clue panels
+              // on a short screen.
+              detail.when(
+                loading: () => const SkeletonBox(height: 120),
+                error: (e, _) => ErrorRetry(
+                  error: e,
+                  onRetry: () {
+                    ref.invalidate(pokemonDetailProvider(answerId));
+                    ref.invalidate(speciesProvider(answerId));
+                  },
+                ),
+                data: (d) =>
+                    _Clues(detail: d, species: species, revealed: revealed),
               ),
             ],
             const SizedBox(height: Space.lg),

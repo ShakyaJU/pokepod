@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/storage/local_store.dart';
+import '../../core/utils/formatters.dart';
 import '../mystery/mystery_controller.dart';
 import 'notification_service.dart';
 
@@ -138,19 +139,30 @@ bool streakReminderEligible({
     permissionGranted &&
     now.isBefore(reminderTime);
 
-/// Re-evaluates the single pending reminder from the current state: arms it
-/// when the user has an active streak and today's challenge is still
-/// unplayed, and cancels it in every other case (completed, lost, no streak,
-/// preferences off, permission revoked). Runs after every relevant change, so
-/// a reminder can never stay behind after the situation it describes.
+/// Re-evaluates the single pending reminder from the current state.
+///
+/// Candidates are walked one challenge day at a time: today's slot while it is
+/// still ahead of the clock and unplayed, otherwise tomorrow's, and so on.
+/// Every slot sits exactly [kStreakReminderLead] before that day's local
+/// midnight reset, so the notification, the challenge date and the streak can
+/// never disagree about when the day ends.
+///
+/// Only a finished day and a slot whose moment has already passed are stepped
+/// over. A missing streak, a switched-off reminder or a missing permission
+/// ends the walk at once and cancels whatever is armed, instead of hunting for
+/// a later slot that would fail the same gates. Because the plugin id is
+/// stable, repeated calls converge on exactly one pending reminder, so an app
+/// restart or a burst of state changes can never stack a second copy.
 Future<void> refreshStreakReminder(ProviderContainer container) async {
   final service = container.read(notificationServiceProvider);
   final prefs = container.read(notificationsPrefsProvider);
-  final day = container.read(challengeDayProvider);
-  final mystery = container.read(mysteryProvider);
   final streaks = container.read(mysteryStreaksProvider);
+  final mystery = container.read(mysteryProvider);
   final now = container.read(clockProvider)();
-  final reminderTime = DateTime(now.year, now.month, now.day, kReminderHour);
+  // A saved date that cannot be parsed must not stop the reminder: fall back
+  // to today, which is the day the challenge would be on anyway.
+  final storedDay = container.read(challengeDayProvider);
+  final day = parseDateKey(storedDay) == null ? localDateKey(now) : storedDay;
 
   var granted = false;
   try {
@@ -162,27 +174,36 @@ Future<void> refreshStreakReminder(ProviderContainer container) async {
     granted = false;
   }
 
-  final eligible = streakReminderEligible(
-    masterEnabled: prefs.enabled,
-    reminderToggle: prefs.streakReminder,
-    currentStreak: streaks.current,
-    completedToday: mystery.completed(day),
-    permissionGranted: granted,
-    now: now,
-    reminderTime: reminderTime,
-  );
-
   try {
-    if (!eligible) {
-      await service.cancel();
-      return;
+    var targetDay = day;
+    for (var step = 0; step < kStreakReminderLookAheadDays; step++) {
+      final when = streakReminderTimeFor(targetDay);
+      final eligible = streakReminderEligible(
+        masterEnabled: prefs.enabled,
+        reminderToggle: prefs.streakReminder,
+        currentStreak: streaks.current,
+        completedToday: mystery.completed(targetDay),
+        permissionGranted: granted,
+        now: now,
+        reminderTime: when,
+      );
+      if (eligible) {
+        await service.schedule(
+          when: when,
+          title: streakReminderTitle(),
+          body: streakReminderBody(),
+          payload: kReminderPayloadMystery,
+        );
+        return;
+      }
+      // These gates cannot change between iterations, so nothing further
+      // along the walk would satisfy them either.
+      if (!granted || !prefs.streakReminder || streaks.current <= 0) {
+        break;
+      }
+      targetDay = followingDayKey(targetDay);
     }
-    await service.schedule(
-      when: reminderTime,
-      title: streakReminderTitle(),
-      body: streakReminderBody(streaks.current),
-      payload: kReminderPayloadMystery,
-    );
+    await service.cancel();
   } catch (error) {
     // Scheduling is best-effort: a failure must never disturb the app, but
     // it must not be invisible either — a swallowed scheduling error is

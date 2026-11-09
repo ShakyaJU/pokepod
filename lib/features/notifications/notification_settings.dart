@@ -189,8 +189,8 @@ class _NotificationSettingsSectionState
               secondary: const Icon(Icons.local_fire_department_outlined),
               title: const Text('Who\'s That Pokémon? streak reminder'),
               subtitle: const Text(
-                'A nudge in the evening when you have an active streak and '
-                'today\'s challenge is still unplayed.',
+                'Three hours before the daily reset, when you have an active '
+                'streak and today\'s challenge is still unplayed.',
               ),
               value: prefs.streakReminder,
               onChanged:

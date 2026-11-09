@@ -11,6 +11,7 @@ import 'package:pokepod/core/storage/local_store.dart';
 import 'package:pokepod/data/providers.dart';
 import 'package:pokepod/features/pokedex/pokemon_tiles.dart';
 import 'package:pokepod/features/mystery/mystery_controller.dart';
+import 'package:pokepod/features/onboarding/onboarding_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/support.dart';
@@ -26,7 +27,13 @@ Future<FakeApiClient> pumpApp(
   Duration splash = Duration.zero,
   SoundBackend? soundBackend,
 }) async {
-  SharedPreferences.setMockInitialValues(prefsValues ?? {});
+  // Every pump here is an established install. The first-run introduction is
+  // a flow of its own with its own tests; without this flag a genuinely new
+  // installation would be pushed through it and cover the app underneath.
+  SharedPreferences.setMockInitialValues({
+    kOnboardingStorageKey: true,
+    ...?prefsValues,
+  });
   final prefs = await SharedPreferences.getInstance();
   final client = FakeApiClient({
     '$apiBase/pokemon?limit=1025&offset=0': catalogJson([
@@ -190,7 +197,8 @@ void main() {
   testWidgets('network failure on the catalogue offers a retry', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
+    // An established install: the first-run introduction is out of scope here.
+    SharedPreferences.setMockInitialValues({kOnboardingStorageKey: true});
     final prefs = await SharedPreferences.getInstance();
     final client = FakeApiClient({
       '$apiBase/pokemon?limit=1025&offset=0': const AppException(

@@ -74,6 +74,60 @@ void main() {
       expect(block, contains('android:exported="false"'));
     });
 
+    test('re-calculates the reminder when the clock or zone moves', () {
+      final xml = manifest.readAsStringSync();
+      final receiver = RegExp(
+        '<receiver[^>]*'
+        '\\.ClockChangeReceiver[^>]*>'
+        '.*?</receiver>',
+        multiLine: true,
+        dotAll: true,
+      ).firstMatch(xml);
+
+      expect(
+        receiver,
+        isNotNull,
+        reason:
+            'the challenge resets at local midnight, so a moved clock or time '
+            'zone moves the boundary the reminder is measured against — '
+            'without this receiver an armed reminder can drift to after the '
+            'reset it exists to precede',
+      );
+      final block = receiver!.group(0)!;
+      expect(block, contains('android.intent.action.TIME_SET'));
+      expect(block, contains('android.intent.action.TIMEZONE_CHANGED'));
+    });
+
+    test('keeps the resources the release shrinker would strip', () {
+      // AAPT2 removes anything no generated resource, layout or compiled class
+      // names, and the reminder's icon *and* its sound are only ever named from
+      // Dart. Stripped, initialize() rejects with `invalid_icon` and
+      // zonedSchedule() with `invalid_sound` — in both cases before any alarm
+      // is set, so in release builds no streak reminder was ever armed at all
+      // while everything else in the app kept working.
+      final keep = File('android/app/src/main/res/raw/keep.xml');
+      expect(
+        keep.existsSync(),
+        isTrue,
+        reason: 'res/raw/keep.xml is what tells the shrinker to leave them',
+      );
+      final xml = keep.readAsStringSync();
+      expect(xml, contains('notification_icon'));
+      expect(xml, contains('notification_flame'));
+      expect(
+        xml,
+        contains('@raw/notification'),
+        reason:
+            'without the scheduled sound zonedSchedule throws invalid_sound '
+            'before it reaches AlarmManager, so nothing is ever armed',
+      );
+      expect(
+        File('android/app/src/main/res/raw/notification.mp3').existsSync(),
+        isTrue,
+        reason: 'a keep rule for a file that is not there keeps nothing',
+      );
+    });
+
     test('declares the permissions the reminder path needs', () {
       final xml = manifest.readAsStringSync();
       expect(
@@ -130,32 +184,43 @@ void main() {
   group('scheduled instant', () {
     setUpAll(tzdata.initializeTimeZones);
 
-    test('the reminder fires at the configured hour of the user\'s zone', () {
-      final zone = tz.getLocation('Asia/Kolkata');
-      tz.setLocalLocation(zone);
-      // The same shape refreshStreakReminder produces: a plain local DateTime
-      // for 20:00 on the day in question.
-      final when = DateTime.fromMillisecondsSinceEpoch(
-        tz.TZDateTime(zone, 2026, 10, 30, kReminderHour).millisecondsSinceEpoch,
-      );
+    test(
+      'the reminder fires three hours before the reset in the user\'s zone',
+      () {
+        final zone = tz.getLocation('Asia/Kolkata');
+        tz.setLocalLocation(zone);
+        // The same shape refreshStreakReminder produces: the plain local moment
+        // three hours before that day's local-midnight reset, expressed as the
+        // instant it represents so the host's own zone cannot colour it.
+        final slot = streakReminderTimeFor('2026-10-30');
+        expect(slot, DateTime(2026, 10, 30, 21));
+        final when = DateTime.fromMillisecondsSinceEpoch(
+          tz.TZDateTime(zone, 2026, 10, 30, slot.hour).millisecondsSinceEpoch,
+        );
 
-      final instant = reminderInstant(when);
+        final instant = reminderInstant(when);
 
-      expect(
-        instant.millisecondsSinceEpoch,
-        when.millisecondsSinceEpoch,
-        reason: 'the moment asked for is the moment scheduled',
-      );
-      expect(instant.hour, kReminderHour, reason: 'in the user\'s own zone');
-      expect(instant.location.name, 'Asia/Kolkata');
-    });
+        expect(
+          instant.millisecondsSinceEpoch,
+          when.millisecondsSinceEpoch,
+          reason: 'the moment asked for is the moment scheduled',
+        );
+        expect(instant.hour, 21, reason: 'in the user\'s own zone');
+        expect(instant.location.name, 'Asia/Kolkata');
+        expect(
+          tz.TZDateTime(zone, 2026, 10, 31).difference(instant),
+          kStreakReminderLead,
+          reason: 'exactly three hours before the reset the alarm protects',
+        );
+      },
+    );
 
     test('a device zone that cannot be read never shifts the fire time', () {
       // _initTimezone falls back to UTC when the device zone is unavailable.
       // The wall-clock string and the zone name travel together, so Android
       // recomputes exactly the instant that was asked for either way.
       tz.setLocalLocation(tz.getLocation('UTC'));
-      final when = DateTime(2026, 10, 30, kReminderHour);
+      final when = streakReminderTimeFor('2026-10-30');
 
       final instant = reminderInstant(when);
 
@@ -211,7 +276,7 @@ void main() {
 
       await scheduler.init();
       await scheduler.schedule(
-        when: DateTime(2026, 10, 30, kReminderHour),
+        when: streakReminderTimeFor('2026-10-30'),
         title: 'title',
         body: 'body',
         payload: kReminderPayloadMystery,
@@ -230,7 +295,7 @@ void main() {
         final plugin = _RecordingPlugin();
         final scheduler = FlutterStreakReminderScheduler(plugin: plugin);
         tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
-        final when = DateTime(2026, 10, 30, kReminderHour);
+        final when = streakReminderTimeFor('2026-10-30');
 
         await scheduler.schedule(
           when: when,
@@ -245,12 +310,13 @@ void main() {
           AndroidScheduleMode.inexactAllowWhileIdle,
           reason:
               'an exact alarm would require SCHEDULE_EXACT_ALARM on Android '
-              '12+, and a 20:00 nudge does not need minute precision',
+              '12+, and a reminder three hours ahead does not need minute '
+              'precision',
         );
         expect(
           plugin.scheduledDate!.millisecondsSinceEpoch,
           when.millisecondsSinceEpoch,
-          reason: 'the configured local hour is what Android fires at',
+          reason: 'the local moment three hours before reset is what fires',
         );
         expect(
           plugin.matchedComponents,

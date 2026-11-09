@@ -8,7 +8,7 @@ import '../../core/utils/formatters.dart';
 import '../../data/models/pokemon.dart';
 import '../../data/providers.dart';
 import '../../domain/compare_logic.dart';
-import '../../domain/type_chart.dart';
+import '../shared/defensive_profile.dart';
 import '../shared/pokemon_picker.dart';
 
 /// Side-by-side "DNA" comparison of two Pokémon using real base stats.
@@ -272,9 +272,9 @@ class _AnalysisBody extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _DefenceList(a.types)),
+            Expanded(child: DefensiveProfile(a.types)),
             const SizedBox(width: Space.sm),
-            Expanded(child: _DefenceList(b.types)),
+            Expanded(child: DefensiveProfile(b.types)),
           ],
         ),
         const SizedBox(height: Space.lg),
@@ -462,57 +462,6 @@ class _AbilityList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(a.hidden ? '${a.displayName} (hidden)' : a.displayName),
           ),
-      ],
-    );
-  }
-}
-
-class _DefenceList extends StatelessWidget {
-  const _DefenceList(this.types);
-
-  final List<String> types;
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = TypeChart.defensiveProfile(types);
-    final scheme = Theme.of(context).colorScheme;
-    List<Widget> group(String title, bool Function(double) test, Color color) {
-      final entries = [
-        for (final t in kTypes)
-          if (test(profile[t]!)) t,
-      ];
-      if (entries.isEmpty) {
-        return const [];
-      }
-      return [
-        Text(title, style: readoutStyle(context, size: 10, color: color)),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            for (final t in entries)
-              Chip(
-                label: Text(
-                  '${titleCase(t)} ${formatMultiplier(profile[t]!)}',
-                  style: const TextStyle(fontSize: 11),
-                ),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                side: BorderSide(color: typeColor(t).withValues(alpha: 0.7)),
-              ),
-          ],
-        ),
-        const SizedBox(height: Space.sm),
-      ];
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...group('WEAK TO', (m) => m > 1, scheme.error),
-        ...group('RESISTS', (m) => m < 1 && m > 0, scheme.primary),
-        ...group('IMMUNE', (m) => m == 0, AppColors.violet),
       ],
     );
   }

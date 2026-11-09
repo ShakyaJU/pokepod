@@ -5,6 +5,7 @@ import '../../app/design_system/widgets.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/tokens.dart';
 import 'help_content.dart';
+import '../onboarding/onboarding_page.dart';
 
 /// Searchable, collapsible user guide for PokéPod.
 class HelpPage extends StatefulWidget {
@@ -91,6 +92,14 @@ class _HelpPageState extends State<HelpPage> {
               ),
             ),
             const SizedBox(height: Space.md),
+            if (query.isEmpty) ...[
+              OutlinedButton.icon(
+                onPressed: () => showAppOnboarding(context),
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('Replay the introduction'),
+              ),
+              const SizedBox(height: Space.md),
+            ],
             TextField(
               controller: _search,
               onChanged: (_) => setState(() {}),

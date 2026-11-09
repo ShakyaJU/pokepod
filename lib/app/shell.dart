@@ -17,6 +17,8 @@ import '../features/mystery/mystery_page.dart';
 import '../features/notifications/notification_onboarding.dart';
 import '../features/notifications/notification_service.dart';
 import '../features/notifications/notifications_controller.dart';
+import '../features/onboarding/onboarding_controller.dart';
+import '../features/onboarding/onboarding_page.dart';
 import '../features/pokedex/pokedex_page.dart';
 import '../features/pokemon_detail/dossier_page.dart';
 import '../features/trainer_profile/achievement_unlocks.dart';
@@ -163,9 +165,21 @@ class _HomeShellState extends ConsumerState<HomeShell>
     }
     final prefs = ref.read(notificationsPrefsProvider);
     final store = ref.read(sharedPreferencesProvider);
-    if (notificationsSupported &&
-        shouldShowNotificationOnboarding(store, prefs)) {
+    // Read before anything claims the first run: this is the app's existing
+    // "is this a brand-new installation?" test, and it only stays true while
+    // no first-run answer has been recorded yet.
+    final firstLaunch = shouldShowNotificationOnboarding(store, prefs);
+    if (firstLaunch && notificationsSupported) {
       await showNotificationOnboarding(context, ref);
+    }
+    if (!mounted) {
+      return;
+    }
+    // The introduction follows the permission explanation, and only for the
+    // same genuinely new installation — never for someone updating into a
+    // version that happens to add it.
+    if (shouldShowAppOnboarding(store, firstLaunch: firstLaunch)) {
+      await showAppOnboarding(context);
     }
     if (!mounted) {
       return;
@@ -205,9 +219,14 @@ class _HomeShellState extends ConsumerState<HomeShell>
       unawaited(ref.read(soundServiceProvider).stopAll());
     }
     if (state == AppLifecycleState.resumed) {
-      // The app was in the background: the date (and daily Pokémon) may have changed.
+      // The app was in the background: the date (and daily Pokémon) may have
+      // changed, and a reminder that has already fired has to be re-armed for
+      // the next period even when the calendar day did not move.
       _refreshDay();
       _scheduleMidnight();
+      if (mounted) {
+        unawaited(refreshStreakReminder(ProviderScope.containerOf(context)));
+      }
     }
   }
 

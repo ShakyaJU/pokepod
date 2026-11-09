@@ -15,10 +15,12 @@ import 'package:pokepod/features/notifications/notifications_controller.dart';
 
 import 'support/support.dart';
 
-/// A fixed afternoon, so "today" and the 8pm reminder window are known in
-/// every test below.
+/// A fixed afternoon, so "today" and the reminder window are known in every
+/// test below. The slot for 2026-10-30 opens at 21:00 — three hours before
+/// that day's local-midnight reset.
 final DateTime kAfternoon = DateTime(2026, 10, 30, 14, 30);
 const String kToday = '2026-10-30';
+const String kTomorrow = '2026-10-31';
 const String kYesterday = '2026-10-29';
 
 /// Records every call instead of touching platform channels.
@@ -132,25 +134,81 @@ class _SheetHost extends ConsumerWidget {
 void main() {
   group('reminder copy', () {
     test('the title is the wording PokéPod promised', () {
-      expect(streakReminderTitle(), 'Your Pokémon streak needs you! 🔥');
+      expect(streakReminderTitle(), 'Your PokéPod streak is at risk!');
     });
 
-    test('the body states the streak and the deadline', () {
-      final body = streakReminderBody(7);
-      expect(body, contains('7-day streak'));
-      expect(body, contains('before it expires'));
+    test('the body states the deadline and the game to play', () {
+      final body = streakReminderBody();
+      expect(body, contains('resets in 3 hours'));
+      expect(body, contains('Who\'s That Pokémon?'));
+      expect(body, contains('keep your streak alive'));
     });
 
-    test('the reminder is set for the evening, hours before midnight', () {
-      expect(kReminderHour, 20);
+    test('the deadline in the copy is the deadline in the schedule', () {
+      // The body derives its number from the same constant the alarm is set
+      // with, so the wording can never drift away from the real reminder time.
+      expect(kStreakReminderLead, const Duration(hours: 3));
+      expect(
+        streakReminderBody(),
+        contains('${kStreakReminderLead.inHours} hours'),
+      );
       expect(kStreakReminderId, greaterThan(0));
       expect(kReminderPayloadMystery, 'mystery');
     });
   });
 
+  group('when the reminder fires', () {
+    test('it is exactly three hours before the daily reset', () {
+      final reset = nextDailyReset(kAfternoon);
+      expect(reset, DateTime(2026, 10, 31));
+      expect(
+        reset.difference(streakReminderTimeFor(kToday)),
+        kStreakReminderLead,
+        reason: 'the gap between the alarm and the reset is the promise',
+      );
+    });
+
+    test('the reset is the same local midnight the challenge date uses', () {
+      // 23:30 on the 30th still belongs to the 30th; only after local
+      // midnight does the reset (and the next reminder slot) move.
+      final lateNight = DateTime(2026, 10, 30, 23, 30);
+      expect(nextDailyReset(lateNight), DateTime(2026, 10, 31));
+      expect(
+        nextDailyReset(lateNight.subtract(const Duration(hours: 1))),
+        DateTime(2026, 10, 31),
+      );
+    });
+
+    test('it is21:00 local on an ordinary day, and always in the future', () {
+      final when = streakReminderTimeFor(kToday);
+      expect(when, DateTime(2026, 10, 30, 21));
+      expect(when.isAfter(kAfternoon), isTrue);
+      expect(when.isBefore(nextDailyReset(kAfternoon)), isTrue);
+    });
+
+    test('the day after a day key always advances by one calendar day', () {
+      expect(followingDayKey(kYesterday), kToday);
+      expect(followingDayKey(kToday), kTomorrow);
+      expect(followingDayKey(kTomorrow), '2026-11-01');
+      expect(
+        followingDayKey('not-a-date'),
+        'not-a-date',
+        reason: 'unparseable data ends the walk instead of looping forever',
+      );
+    });
+
+    test('an unrecognised day key can never be armed', () {
+      expect(
+        streakReminderTimeFor('not-a-date'),
+        DateTime.utc(1970),
+        reason: 'a moment in the past the walk steps straight over',
+      );
+    });
+  });
+
   group('streakReminderEligible', () {
     final now = DateTime(2026, 10, 30, 14);
-    final reminderTime = DateTime(2026, 10, 30, 20);
+    final reminderTime = DateTime(2026, 10, 30, 21);
 
     bool check({
       bool masterEnabled = true,
@@ -182,18 +240,18 @@ void main() {
       expect(
         check(at: DateTime(2026, 10, 30, 21)),
         isFalse,
-        reason: 'the evening window has passed',
+        reason: 'the window closes three hours before the reset',
       );
     });
 
-    test('20:00 exactly is already too late, an hour earlier is not', () {
-      expect(check(at: DateTime(2026, 10, 30, 20)), isFalse);
-      expect(check(at: DateTime(2026, 10, 30, 19, 59)), isTrue);
+    test('21:00 exactly is already too late, an hour earlier is not', () {
+      expect(check(at: DateTime(2026, 10, 30, 21)), isFalse);
+      expect(check(at: DateTime(2026, 10, 30, 20, 59)), isTrue);
     });
   });
 
   group('refreshStreakReminder', () {
-    test('arms one reminder for 8pm with the promised copy', () async {
+    test('arms one reminder three hours before the reset', () async {
       final fake = FakeScheduler();
       final container = makeContainer(
         await mockPrefs(progressPrefs()),
@@ -207,9 +265,14 @@ void main() {
 
       expect(fake.scheduleCalls, 1);
       expect(fake.pending, 1);
-      expect(fake.scheduledAt, DateTime(2026, 10, 30, 20));
-      expect(fake.scheduledTitle, 'Your Pokémon streak needs you! 🔥');
-      expect(fake.scheduledBody, contains('1-day streak'));
+      expect(fake.scheduledAt, DateTime(2026, 10, 30, 21));
+      expect(
+        fake.scheduledAt!.difference(nextDailyReset(kAfternoon)),
+        -kStreakReminderLead,
+        reason: 'exactly three hours before the challenge resets',
+      );
+      expect(fake.scheduledTitle, 'Your PokéPod streak is at risk!');
+      expect(fake.scheduledBody, contains('resets in 3 hours'));
       expect(fake.scheduledPayload, kReminderPayloadMystery);
     });
 
@@ -235,7 +298,7 @@ void main() {
       },
     );
 
-    test('completing today withdraws the reminder', () async {
+    test('completing today suppresses its slot and arms tomorrow\'s', () async {
       final fake = FakeScheduler();
       final container = makeContainer(
         await mockPrefs(progressPrefs(wonToday: true)),
@@ -247,10 +310,44 @@ void main() {
 
       await refreshStreakReminder(container);
 
-      expect(fake.cancelCalls, 1);
-      expect(fake.scheduleCalls, 0);
-      expect(fake.pending, 0);
+      expect(
+        fake.scheduledAt,
+        isNot(DateTime(2026, 10, 30, 21)),
+        reason: 'a day that is already finished must never be reminded',
+      );
+      expect(
+        fake.scheduledAt,
+        DateTime(2026, 10, 31, 21),
+        reason: 'the next unplayed period is covered straight away',
+      );
+      expect(fake.pending, 1);
+      expect(fake.cancelCalls, 0);
     });
+
+    test(
+      'a slot whose moment has passed is stepped over, never armed',
+      () async {
+        // 23:30 on the 31st: that day's slot closed at 21:00, so the walk must
+        // land on the next period rather than schedule an instant in the past.
+        // The win on the 30th keeps the streak alive across the move.
+        final lateNight = DateTime(2026, 10, 31, 23, 30);
+        final fake = FakeScheduler();
+        final container = makeContainer(
+          await mockPrefs(progressPrefs(wonToday: true)),
+          overrides: [
+            notificationServiceProvider.overrideWithValue(fake),
+            clockProvider.overrideWithValue(() => lateNight),
+          ],
+        );
+
+        await refreshStreakReminder(container);
+
+        expect(fake.scheduleCalls, 1);
+        expect(fake.scheduledAt, DateTime(2026, 11, 1, 21));
+        expect(fake.scheduledAt!.isAfter(lateNight), isTrue);
+        expect(fake.pending, 1);
+      },
+    );
 
     test('losing the streak withdraws the reminder', () async {
       final fake = FakeScheduler();
@@ -304,13 +401,30 @@ void main() {
       expect(fake.cancelCalls, 1);
     });
 
-    test('after 8pm nothing is armed for a moment that has passed', () async {
+    test('a stored challenge date that cannot be parsed fails safe', () async {
+      // `challengeDay` comes from the saved game. Corrupted data must never
+      // crash the refresh or arm a reminder at a moment that does not exist;
+      // the streak calculation cannot vouch for a day it cannot read, so the
+      // safe outcome is to withdraw rather than guess.
       final fake = FakeScheduler();
       final container = makeContainer(
-        await mockPrefs(progressPrefs()),
+        await mockPrefs({
+          'mystery.v1': jsonEncode({
+            'v': 2,
+            'history': {
+              kYesterday: {'g': 1, 'w': true, 't': 25},
+            },
+            'seen': 'not-a-date',
+          }),
+          'notifications.v1': jsonEncode({
+            'enabled': true,
+            'streakReminder': true,
+            'asked': true,
+          }),
+        }),
         overrides: [
           notificationServiceProvider.overrideWithValue(fake),
-          clockProvider.overrideWithValue(() => DateTime(2026, 10, 30, 21, 5)),
+          clockProvider.overrideWithValue(() => kAfternoon),
         ],
       );
 
@@ -318,6 +432,7 @@ void main() {
 
       expect(fake.scheduleCalls, 0);
       expect(fake.cancelCalls, 1);
+      expect(fake.pending, 0);
     });
 
     test('a broken alarm system never disturbs the app', () async {
@@ -421,8 +536,9 @@ void main() {
   });
 
   /// Pumps the Notifications section of Settings against a fake scheduler.
-  /// [now] fixes the clock so the 8pm reminder window is always open, and
-  /// [withStreak] seeds yesterday's win so there is a streak worth protecting.
+  /// [now] fixes the clock so the reminder window (three hours before the
+  /// reset) is always open, and [withStreak] seeds yesterday's win so there is
+  /// a streak worth protecting.
   Future<(ProviderContainer, FakeScheduler)> pumpSection(
     WidgetTester tester, {
     bool masterOn = false,
@@ -454,7 +570,7 @@ void main() {
       preferences,
       overrides: [
         notificationServiceProvider.overrideWithValue(fake),
-        // Fixed to the afternoon, so the 8pm window is always open.
+        // Fixed to the afternoon, so the reminder window is always open.
         clockProvider.overrideWithValue(() => now ?? kAfternoon),
       ],
     );

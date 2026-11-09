@@ -15,6 +15,7 @@ import '../collections/collections_controller.dart';
 import '../evolution/constellation_page.dart';
 import '../pokedex/pokemon_tiles.dart';
 import '../research/research_controller.dart';
+import '../shared/defensive_profile.dart';
 import '../shared/navigation.dart';
 import '../trainer_profile/profile_controller.dart';
 
@@ -323,6 +324,9 @@ class _DossierBody extends ConsumerWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: Space.lg),
+              const SectionLabel('Defense Profile'),
+              DefensiveProfile(detail.types),
               const SizedBox(height: Space.lg),
               const SectionLabel('Evolution'),
               _EvolutionPreview(id: detail.id),

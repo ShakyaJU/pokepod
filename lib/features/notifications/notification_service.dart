@@ -7,6 +7,8 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/utils/formatters.dart';
+
 /// Stable id for the one reminder PokéPod can send. Reusing a single id means
 /// a new schedule always replaces the previous one, so a duplicate
 /// notification is impossible by construction.
@@ -21,14 +23,64 @@ const String kStreakReminderChannelDescription =
 /// Payload carried by the reminder; tapping it opens the game.
 const String kReminderPayloadMystery = 'mystery';
 
-/// Local hour of the evening reminder (a few hours before the local-midnight
-/// deadline, so there is a real chance to play before the streak can end).
-const int kReminderHour = 20;
+/// How long before the daily reset the streak reminder fires.
+///
+/// The challenge resets at local midnight — the same boundary the challenge
+/// date and the streak are counted on — so the reminder is exactly this much
+/// earlier on the device's own clock. No hour of the day is hard-coded: three
+/// hours before midnight is whatever instant that turns out to be, including
+/// on a day the clocks move.
+const Duration kStreakReminderLead = Duration(hours: 3);
 
-String streakReminderTitle() => 'Your Pokémon streak needs you! 🔥';
+/// How many consecutive challenge days the reminder walk steps over looking
+/// for a slot that can still be delivered. One step covers a normal evening
+/// launch; the rest absorb a device whose clock or challenge date has moved,
+/// without ever risking an unbounded loop.
+const int kStreakReminderLookAheadDays = 8;
 
-String streakReminderBody(int streak) =>
-    'Your $streak-day streak is waiting. Play today\'s challenge before it expires!';
+/// The instant the daily challenge resets after [now]: the next local
+/// midnight. This is the single source of truth the reminder is measured
+/// against, so the notification can never disagree with the challenge date.
+DateTime nextDailyReset(DateTime now) =>
+    DateTime(now.year, now.month, now.day + 1);
+
+/// When the reminder for challenge day [day] fires: exactly
+/// [kStreakReminderLead] before that day's reset.
+///
+/// An unrecognised day key falls back to the epoch, so the caller steps over
+/// it instead of arming a reminder for a moment that does not exist.
+DateTime streakReminderTimeFor(String day) {
+  final date = parseDateKey(day);
+  if (date == null) {
+    return DateTime.utc(1970);
+  }
+  return DateTime(
+    date.year,
+    date.month,
+    date.day + 1,
+  ).subtract(kStreakReminderLead);
+}
+
+/// The challenge day after [day], as a `YYYY-MM-DD` key.
+///
+/// An unrecognised key is returned unchanged, which ends the caller's walk
+/// rather than letting it loop forever on data that cannot be parsed.
+String followingDayKey(String day) {
+  final date = parseDateKey(day);
+  if (date == null) {
+    return day;
+  }
+  return utcDateKey(date.add(const Duration(days: 1)));
+}
+
+String streakReminderTitle() => 'Your PokéPod streak is at risk!';
+
+/// The body states the deadline the schedule actually guarantees: the alarm is
+/// always [kStreakReminderLead] ahead of the reset, so the wording is derived
+/// from that constant and can never drift away from it.
+String streakReminderBody() =>
+    'Your daily challenge resets in ${kStreakReminderLead.inHours} hours. '
+    'Play Who\'s That Pokémon? to keep your streak alive!';
 
 /// The absolute instant Android should fire at for the local moment [when].
 ///

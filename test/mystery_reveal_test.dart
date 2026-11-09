@@ -279,4 +279,41 @@ void main() {
       },
     );
   });
+
+  group('the order of the game', () {
+    testWidgets('Make a guess sits above the clues it unlocks', (tester) async {
+      await _pumpPage(tester);
+      // Tall enough to build the whole page, so the order can be read off the
+      // positions rather than by chasing sections through a scroll.
+      tester.view.physicalSize = const Size(900, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      await tester.pump();
+
+      final reveal = find.byType(MysteryReveal);
+      final guess = find.text('Make a guess');
+      // SectionLabel upper-cases whatever it is given.
+      final clues = find.text('CLUES');
+      final record = find.text('YOUR RECORD');
+
+      expect(reveal, findsOneWidget);
+      expect(guess, findsOneWidget);
+      expect(clues, findsOneWidget);
+      expect(record, findsOneWidget);
+
+      final order = [
+        tester.getTopLeft(reveal).dy,
+        tester.getTopLeft(guess).dy,
+        tester.getTopLeft(clues).dy,
+        tester.getTopLeft(record).dy,
+      ];
+
+      expect(
+        order,
+        [...order]..sort(),
+        reason:
+            'the silhouette, then the guess control, then the clues it '
+            'unlocks, and the record last',
+      );
+    });
+  });
 }

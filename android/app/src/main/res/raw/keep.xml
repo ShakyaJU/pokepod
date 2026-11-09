@@ -22,6 +22,18 @@
   The widget drawables deliberately need no entry here: widget_card_bg,
   widget_chip_bg and widget_pokeball are referenced from layout XML, and
   launch_background from styles.xml, so the shrinker already keeps those.
+
+  The same shrinker also removes res/raw/notification.mp3, which is named only
+  from Dart (RawResourceAndroidNotificationSound('notification') on the channel
+  and on every reminder). AAPT2 cannot see either reference, so getIdentifier()
+  returns 0 and flutter_local_notifications rejects the schedule outright with
+
+      PlatformException(invalid_sound, The resource notification could not be
+      found. Please make sure it has been added as a raw resource ...)
+
+  before any alarm is set - so in a release build no streak reminder was ever
+  armed at all, even though initialize() and the channel both succeeded. Keeping
+  the sound by name is the whole fix.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/notification_icon,@drawable/notification_flame" />
+    tools:keep="@drawable/notification_icon,@drawable/notification_flame,@raw/notification" />

@@ -68,6 +68,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- The daily challenge resets at local midnight, so moving the clock
+             or the time zone moves the reminder's boundary with it. Both
+             actions are protected system broadcasts: nothing but Android can
+             send them to this receiver. -->
+        <receiver
+            android:name=".ClockChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
         <!-- flutter_local_notifications delivers a scheduled reminder by firing
              an AlarmManager broadcast at ScheduledNotificationReceiver. The
              plugin's own manifest declares no receivers, so without the two

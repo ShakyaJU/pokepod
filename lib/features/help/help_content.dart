@@ -149,6 +149,7 @@ const List<HelpTopic> kHelpTopics = [
       'Base stats: HP, Attack, Defense, Sp. Atk, Sp. Def and Speed, with their total.',
       'Abilities, with hidden abilities marked.',
       'Moves: a sample of the first 12 learnable moves alphabetically, plus how many it can learn in total.',
+      'Defense Profile: what it is weak to, what it resists and what cannot touch it, worked out from its typing.',
       'Evolution: a preview of its evolution family that opens the Evolution Constellation.',
       'Research log and Research notes for your own progress and observations.',
       'Actions: the heart in the top bar (favourite), Add to collection, Compare and Pin to showcase.',
@@ -169,9 +170,9 @@ const List<HelpTopic> kHelpTopics = [
       'An immunity wins over a weakness: Ground attacks do nothing (×0) to anything that is part Flying.',
     ]),
     HelpBlock.paragraph(
-      'PokéPod shows weaknesses, resistances and immunities in Pokémon DNA ("Defensive profile") '
-      'and, for whole teams, in the Team Architect. The dossier itself shows types but not the matchup chart. '
-      'The chart used is the current 18-type chart (with the Fairy type).',
+      'PokéPod shows weaknesses, resistances and immunities in a Pokémon\'s own Defense Profile, '
+      'in Pokémon DNA ("Defensive profile") when you compare two of them, and for whole teams in the '
+      'Team Architect. The chart used is the current 18-type chart (with the Fairy type).',
     ),
   ]),
   HelpTopic(
@@ -268,7 +269,7 @@ const List<HelpTopic> kHelpTopics = [
     'Streak reminders and notifications',
     [
       HelpBlock.paragraph(
-        'PokéPod can send one optional, local reminder in the evening when your Who\'s That Pokémon? '
+        'PokéPod can send one optional, local reminder three hours before your Who\'s That Pokémon? '
         'streak is at risk. It never leaves your device: there is no account, no server and nothing is uploaded.',
       ),
       HelpBlock.bullets([
@@ -277,15 +278,19 @@ const List<HelpTopic> kHelpTopics = [
             'reminder once on Discover before you have made any progress.',
         'The system permission is asked for only when you tap "Enable notifications". Choosing "Not '
             'now" (or dismissing the sheet) records your choice and PokéPod does not ask again.',
-        'When it arrives: around 8pm local time, and only while you have an active streak and today\'s '
+        'When it arrives: exactly three hours before the daily challenge resets at local midnight '
+            '(9pm on an ordinary day), and only while you have an active streak and that day\'s '
             'challenge is still unplayed.',
-        'It is withdrawn automatically once you play today, when your streak ends, or when you switch '
-            'notifications off, so a reminder can never outlive the situation it describes.',
+        'It is withdrawn automatically once you play, when your streak ends, or when you switch '
+            'notifications off. If you have already finished, the next period is armed in its place, '
+            'so a reminder can never outlive the situation it describes.',
         'Tapping the notification opens Who\'s That Pokémon?.',
         'If Android is blocking notifications, Settings > Notifications says so and offers an "Open '
             'settings" shortcut to the system permission screen.',
-        'Reminders are inexact by design: Android may deliver one slightly after 8pm to save battery, '
-            'and no exact-alarm permission is used.',
+        'Reminders are inexact by design: Android may deliver one slightly after the moment to save '
+            'battery, and no exact-alarm permission is used.',
+        'Changing the clock or the time zone re-arms the reminder, because the reset and the reminder '
+            'are both counted in your own local time.',
       ]),
       HelpBlock.tip(
         'Reminders and widgets are the only things PokéPod runs outside a screen you opened, and both '
