@@ -495,7 +495,7 @@ To add one, long-press the home screen, open *Widgets*, and choose PokéPod.
 
 - Short audio effects for the app's splash screen and **Who's That Pokémon?** daily challenge.
 - Audio feedback for correct and incorrect guesses.
-<!--- Sound playback can be enabled or disabled through Settings.-->
+- Sound playback can be enabled or disabled through Settings.
 - Audio playback is managed when the app is paused or moved to the background.
 
     </td>
