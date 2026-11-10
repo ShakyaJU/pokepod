@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Read by Android 12+ instead of android:allowBackup, and it is the only
+  thing that also covers device-to-device transfer (Smart Switch and the
+  like), which is a separate path from cloud backup.
+
+  Every domain is excluded because SharedPreferences holds a single file,
+  FlutterSharedPreferences.xml: there is no way to keep the first-run
+  completion flags (onboarding.v1, notifications.v1) out of a restore
+  while still restoring the progress keys beside them. Restoring none of
+  it is what makes a freshly installed APK start genuinely fresh, so the
+  introduction and the notification explanation are shown again exactly
+  as they were on the very first install.
+
+  See the note above <application> in AndroidManifest.xml.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+    </device-transfer>
+</data-extraction-rules>

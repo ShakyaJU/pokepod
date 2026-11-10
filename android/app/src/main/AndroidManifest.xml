@@ -6,9 +6,27 @@
          brief headless refresh hold the CPU while it works. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Auto Backup is opted out of completely, and it has to be: the default
+         on every Android version is to take part, and with no rules in this
+         file Android restores shared_prefs straight back onto a brand-new
+         install. The restored onboarding.v1 and notifications.v1 completion
+         flags then make a fresh install look like a returning one, so the
+         introduction and the notification explanation are both skipped with
+         nothing in the log to show why.
+
+         This also keeps the app honest about what the Help guide promises:
+         progress "does not sync to the cloud", and uninstalling "permanently
+         erases local progress". Settings > Data > Backup progress stays the
+         only supported way to move data between devices.
+
+         allowBackup covers Android 11 and older; dataExtractionRules is what
+         Android 12+ actually reads, for cloud backup and for device-to-device
+         transfer (Smart Switch and similar) alike. -->
     <application
         android:label="PokéPod"
         android:name="${applicationName}"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
