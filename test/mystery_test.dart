@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pokepod/core/audio/sound_service.dart';
 import 'package:pokepod/domain/mystery_logic.dart';
 import 'package:pokepod/features/mystery/mystery_controller.dart';
 
@@ -475,6 +476,47 @@ void main() {
           'lost',
         ]),
         isTrue,
+      );
+    });
+  });
+
+  group('guess effects follow the sound-effects preference', () {
+    const today = '2026-10-21';
+
+    test('every accepted guess plays its effect while sound is on', () async {
+      final prefs = await mockPrefs();
+      final sound = FakeSoundBackend();
+      final c = makeContainer(
+        prefs,
+        overrides: [soundBackendProvider.overrideWithValue(sound)],
+      );
+      final n = c.read(mysteryProvider.notifier);
+
+      n.submitGuess(5, answerId: 10, today: today); // wrong
+      n.submitGuess(10, answerId: 10, today: today); // correct
+
+      expect(sound.played, [
+        Sfx.error,
+        Sfx.correct,
+      ], reason: 'the existing behaviour is untouched');
+    });
+
+    test('no guess effect plays while sound effects are off', () async {
+      final prefs = await mockPrefs({SoundEffectsNotifier.storageKey: false});
+      final sound = FakeSoundBackend();
+      final c = makeContainer(
+        prefs,
+        overrides: [soundBackendProvider.overrideWithValue(sound)],
+      );
+      final n = c.read(mysteryProvider.notifier);
+
+      expect(n.submitGuess(5, answerId: 10, today: today), GuessResult.wrong);
+      expect(n.submitGuess(10, answerId: 10, today: today), GuessResult.won);
+
+      expect(
+        sound.played,
+        isEmpty,
+        reason: 'the game still plays, it is just silent',
       );
     });
   });

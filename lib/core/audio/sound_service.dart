@@ -5,6 +5,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../storage/local_store.dart';
+
 /// Short sound effects bundled with the app (`assets/sounds/`).
 enum Sfx {
   /// Launch splash.
@@ -176,7 +178,9 @@ class SoundService {
     this._backend, {
     this.minRepeat = const Duration(milliseconds: 250),
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+    bool enabled = true,
+  }) : _clock = clock ?? DateTime.now,
+       _enabled = enabled;
 
   final SoundBackend _backend;
 
@@ -190,6 +194,67 @@ class SoundService {
   /// waits for them so a sound cannot slip past a cancellation that raced it.
   final Map<Sfx, Future<void>> _starting = {};
   bool _disposed = false;
+
+  /// Whether effects may play at all: a synchronous mirror of
+  /// [soundEffectsPrefsProvider]. The preference stays the single source of
+  /// truth and [soundServiceProvider] pushes every change in here, so playback
+  /// can answer on the spot instead of waiting on a load.
+  bool _enabled;
+
+  /// Bumped on every toggle so a stop queued by an earlier "off" cannot be
+  /// applied after the user has turned sound back on.
+  int _muteGeneration = 0;
+
+  /// [playToCompletion] callers waiting for a mute that has not happened yet.
+  /// Released the moment it does, so none of them has to run out its timeout.
+  final Set<Completer<void>> _muteWaiters = {};
+
+  /// The stored choice as the service is currently enforcing it.
+  bool get isEnabled => _enabled;
+
+  /// Applies the user's sound-effects choice.
+  ///
+  /// Turning sound off flips the flag immediately, releases every caller
+  /// waiting on a sound to finish, waits for anything still on its way to the
+  /// platform and only then silences it — so nothing can start *after* the
+  /// request for silence. Each toggle takes a new generation, which makes a
+  /// burst of changes safe: the last choice wins and a superseded stop is
+  /// dropped rather than applied to a sound that is allowed again.
+  Future<void> setEnabled(bool value) async {
+    _enabled = value;
+    if (_disposed) {
+      return;
+    }
+    final generation = ++_muteGeneration;
+    if (value) {
+      return;
+    }
+    final waiters = _muteWaiters.toList();
+    _muteWaiters.clear();
+    for (final waiter in waiters) {
+      if (!waiter.isCompleted) {
+        waiter.complete();
+      }
+    }
+    // Let a play that is still starting land first: stopping afterwards
+    // cannot lose the race against it.
+    for (final starting in _starting.values.toList()) {
+      try {
+        await starting;
+      } catch (_) {
+        // Audio is optional.
+      }
+    }
+    if (generation != _muteGeneration) {
+      // Superseded while we waited; the newer toggle owns the outcome.
+      return;
+    }
+    try {
+      await _backend.stopAll();
+    } catch (_) {
+      // Nothing to stop.
+    }
+  }
 
   Future<void> preload(Iterable<Sfx> effects) async {
     for (final sfx in effects) {
@@ -205,7 +270,7 @@ class SoundService {
   }
 
   Future<void> play(Sfx sfx) async {
-    if (_disposed) {
+    if (_disposed || !_enabled) {
       return;
     }
     final now = _clock();
@@ -225,16 +290,31 @@ class SoundService {
         _starting.remove(sfx);
       }
     }
+    await _stopIfMuted(sfx);
+  }
+
+  /// Stops [sfx] if the choice went to "off" while it was reaching the
+  /// platform, so a request that raced the toggle cannot still be heard.
+  Future<void> _stopIfMuted(Sfx sfx) async {
+    if (_disposed || _enabled || !_backend.isPlaying(sfx)) {
+      return;
+    }
+    try {
+      await _backend.stop(sfx);
+    } catch (_) {
+      // Nothing to stop.
+    }
   }
 
   /// Plays [sfx] and completes when the sound has finished. Never throws and
   /// never waits longer than [maxWait]: a missing, failing or hung audio system
   /// must not block the caller, so the effect is stopped on timeout instead.
+  /// Completes early when the user turns sound off mid-play, having stopped it.
   Future<void> playToCompletion(
     Sfx sfx, {
     Duration maxWait = const Duration(seconds: 6),
   }) async {
-    if (_disposed) {
+    if (_disposed || !_enabled) {
       return;
     }
     final now = _clock();
@@ -252,15 +332,22 @@ class SoundService {
         gate.complete();
       }
     });
+    final muted = Completer<void>();
+    _muteWaiters.add(muted);
     try {
-      await Future.any<void>([_backend.playToCompletion(sfx), gate.future]);
+      await Future.any<void>([
+        _backend.playToCompletion(sfx),
+        gate.future,
+        muted.future,
+      ]);
     } catch (_) {
       // Audio is optional: failing to start must not block the caller.
     } finally {
       timer.cancel();
+      _muteWaiters.remove(muted);
     }
-    if (timedOut) {
-      // Bounded fallback: nothing may keep playing past the wait.
+    if (timedOut || !_enabled) {
+      // Bounded fallback, or the user asked for silence while it played.
       try {
         await _backend.stop(sfx);
       } catch (_) {
@@ -330,6 +417,44 @@ final soundBackendProvider = Provider<SoundBackend>((ref) {
   return backend;
 });
 
+/// The user's sound-effects choice, stored with the other local preferences so
+/// it survives restarts. It defaults to **on**: the app has always played
+/// effects, so an installation that has never touched the switch behaves
+/// exactly as it did before this setting existed.
+class SoundEffectsNotifier extends Notifier<bool> {
+  static const storageKey = 'soundEffects.v1';
+
+  @override
+  bool build() =>
+      ref.watch(sharedPreferencesProvider).getBool(storageKey) ?? true;
+
+  void setEnabled(bool value) {
+    if (state == value) {
+      return;
+    }
+    state = value;
+    ref.read(sharedPreferencesProvider).setBool(storageKey, value);
+  }
+}
+
+/// Its own preference rather than a widget's local flag: this is app state, and
+/// the switch, [soundServiceProvider] and any future caller must all read the
+/// same single source of truth.
+final soundEffectsPrefsProvider = NotifierProvider<SoundEffectsNotifier, bool>(
+  SoundEffectsNotifier.new,
+);
+
 final soundServiceProvider = Provider<SoundService>((ref) {
-  return SoundService(ref.watch(soundBackendProvider));
+  // Read, not watch: watching would rebuild — and therefore replace — the
+  // service on every toggle, stranding the callers already holding it. main()
+  // has loaded the preferences before the first frame, so the choice is known
+  // before any startup sound can be requested.
+  final service = SoundService(
+    ref.watch(soundBackendProvider),
+    enabled: ref.read(soundEffectsPrefsProvider),
+  );
+  ref.listen(soundEffectsPrefsProvider, (_, next) {
+    unawaited(service.setEnabled(next));
+  });
+  return service;
 });

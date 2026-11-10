@@ -49,6 +49,15 @@ class _HomeShellState extends ConsumerState<HomeShell>
   /// details, first-install explanation, first reminder arm).
   bool _notificationsReady = false;
 
+  /// Completes once this launch's first-install screens (the introduction,
+  /// then the notification explanation) have been handled. A widget tap waits
+  /// on it, so a tap made while those are up is honoured the moment they close
+  /// instead of jumping the queue or being buried underneath them.
+  Future<void> _firstLaunch = Future<void>.value();
+
+  /// Destination a widget tap asked for, held until [_firstLaunch] is done.
+  String? _pendingWidgetRoute;
+
   /// Guards against opening Who's That Pokémon? twice from notification taps.
   bool _mysteryRouteOpen = false;
 
@@ -61,6 +70,14 @@ class _HomeShellState extends ConsumerState<HomeShell>
   /// Native channel: widget taps deliver a route name here (MainActivity
   /// holds it until Dart asks, so cold-start taps are not lost).
   static const MethodChannel _routeChannel = MethodChannel('pokepod/routes');
+
+  /// The channel MainActivity answers `getPendingRoute` on. Reading it from
+  /// [_routeChannel] instead would find no handler, throw, and be swallowed
+  /// by the "no channel here" guard below — silently dropping every
+  /// cold-start widget tap.
+  static const MethodChannel _platformChannel = MethodChannel(
+    'pokepod/platform',
+  );
 
   static const _destinations = <NavigationDestination>[
     NavigationDestination(
@@ -96,35 +113,72 @@ class _HomeShellState extends ConsumerState<HomeShell>
     WidgetsBinding.instance.addObserver(this);
     _scheduleMidnight();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Started first and held as a future so the route listener installed
+      // below can wait for the first-install screens rather than racing them.
+      // The flow is best-effort: it must never complete with an error, or a
+      // queued widget tap would be swallowed with it.
+      _firstLaunch = _bootstrapNotifications().catchError((Object error) {
+        debugPrint('PokéPod: first-launch flow failed: $error');
+      });
       unawaited(_initRoutes());
-      unawaited(_bootstrapNotifications());
       unawaited(ref.read(specimenWidgetProvider.notifier).refresh());
     });
   }
 
-  /// Listens for widget taps (foreground and cold start) and opens today's
-  /// Specimen of the Day. On platforms without the native channel the
+  /// Listens for widget taps (foreground and cold start) and records the
+  /// destination they asked for. On platforms without the native channel the
   /// MissingPluginException is simply ignored.
   Future<void> _initRoutes() async {
     try {
       _routeChannel.setMethodCallHandler((call) async {
         if (call.method == 'openRoute') {
-          await _handleSpecimenRoute(call.arguments as String?);
+          await _acceptWidgetRoute(call.arguments as String?);
         }
       });
-      final pending = await _routeChannel.invokeMethod<String>(
+      final pending = await _platformChannel.invokeMethod<String>(
         'getPendingRoute',
       );
-      await _handleSpecimenRoute(pending);
+      await _acceptWidgetRoute(pending);
     } catch (_) {
       // Desktop, tests or a host without the channel: no widget taps exist.
     }
   }
 
-  /// Opens the dossier of the current Specimen of the Day, exactly once per
-  /// tap, from the same selection the widget and Discover display.
-  Future<void> _handleSpecimenRoute(String? route) async {
-    if (!mounted || route != 'specimen' || _specimenRouteOpen) {
+  /// Takes ownership of the destination a widget tap asked for and opens it
+  /// once the first-install screens are out of the way.
+  ///
+  /// Holding the tap here instead of pushing straight away is what makes the
+  /// widget behave on a fresh install: the introduction and the notification
+  /// explanation run first, and the dossier opens as soon as they are finished
+  /// or skipped. A tap from a session where those are already handled waits on
+  /// an already-completed [_firstLaunch] and opens straight away.
+  Future<void> _acceptWidgetRoute(String? route) async {
+    if (route != 'specimen') {
+      return;
+    }
+    _pendingWidgetRoute = route;
+    try {
+      await _firstLaunch;
+    } catch (_) {
+      // Unreachable in practice (the flow never completes with an error), but
+      // a broken startup must never swallow the tap either.
+    }
+    await _openSpecimenIfRequested();
+  }
+
+  /// Opens today's Specimen of the Day exactly once for a queued tap, from the
+  /// same selection the widget and Discover display. Discover becomes the tab
+  /// underneath, so back from the dossier behaves exactly as it does when the
+  /// dossier was opened from Discover — and a plain launcher launch, which
+  /// never queues a route, still lands on Discover alone.
+  Future<void> _openSpecimenIfRequested() async {
+    final route = _pendingWidgetRoute;
+    if (route == null || !mounted) {
+      return;
+    }
+    _pendingWidgetRoute = null;
+    if (_specimenRouteOpen) {
+      // Already showing today's dossier: a second tap must not stack another.
       return;
     }
     _specimenRouteOpen = true;
@@ -169,17 +223,31 @@ class _HomeShellState extends ConsumerState<HomeShell>
     // "is this a brand-new installation?" test, and it only stays true while
     // no first-run answer has been recorded yet.
     final firstLaunch = shouldShowNotificationOnboarding(store, prefs);
-    if (firstLaunch && notificationsSupported) {
-      await showNotificationOnboarding(context, ref);
+
+    // The introduction comes first: a brand-new trainer meets PokéPod before
+    // being asked about reminders. Both screens are gated on the same
+    // genuinely new installation — never on someone updating into a version
+    // that happens to add them. Each step is isolated so a screen that fails
+    // to open can never cost the user the one behind it.
+    if (shouldShowAppOnboarding(store, firstLaunch: firstLaunch)) {
+      try {
+        await showAppOnboarding(context);
+      } catch (error) {
+        debugPrint('PokéPod: could not show the introduction: $error');
+      }
     }
     if (!mounted) {
       return;
     }
-    // The introduction follows the permission explanation, and only for the
-    // same genuinely new installation — never for someone updating into a
-    // version that happens to add it.
-    if (shouldShowAppOnboarding(store, firstLaunch: firstLaunch)) {
-      await showAppOnboarding(context);
+    // The explanation follows as soon as the guide is finished or skipped.
+    if (firstLaunch && notificationsSupported) {
+      try {
+        await showNotificationOnboarding(context, ref);
+      } catch (error) {
+        debugPrint(
+          'PokéPod: could not show the notification explanation: $error',
+        );
+      }
     }
     if (!mounted) {
       return;

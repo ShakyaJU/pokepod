@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/design_system/widgets.dart';
 import '../../app/theme/tokens.dart';
+import '../../core/audio/sound_service.dart';
 import '../../data/providers.dart';
 import '../notifications/notification_settings.dart';
 import 'backup_dialogs.dart';
@@ -121,6 +122,8 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: Space.lg),
           const NotificationSettingsSection(),
           const SizedBox(height: Space.lg),
+          const SoundSettingsSection(),
+          const SizedBox(height: Space.lg),
           const SectionLabel('Data'),
           SettingsGroup(
             children: [
@@ -175,6 +178,40 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The Sound Effects setting: one switch between the Notifications section and
+/// Data. It only writes [soundEffectsPrefsProvider] — [soundServiceProvider]
+/// is what enforces the choice, so every current and future effect in the app
+/// obeys this one switch rather than each screen deciding for itself.
+class SoundSettingsSection extends ConsumerWidget {
+  const SoundSettingsSection({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(soundEffectsPrefsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionLabel('Sound Effects'),
+        SettingsGroup(
+          children: [
+            SwitchListTile(
+              secondary: const Icon(Icons.volume_up_outlined),
+              title: const Text('Sound Effects'),
+              subtitle: const Text(
+                'Enable or disable sound effects throughout PokéPod.',
+              ),
+              value: enabled,
+              onChanged: (value) => ref
+                  .read(soundEffectsPrefsProvider.notifier)
+                  .setEnabled(value),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

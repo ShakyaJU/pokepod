@@ -11,15 +11,19 @@ import 'notifications_controller.dart';
 /// the decision and PokéPod never asks again; notifications can still be
 /// turned on later in Settings.
 Future<void> showNotificationOnboarding(BuildContext context, WidgetRef ref) {
-  // Recorded the moment it appears: whatever the user does next (enable,
-  // decline, or simply swipe it away) PokéPod never shows it again.
-  ref.read(notificationsPrefsProvider.notifier).markAsked();
-  return showModalBottomSheet<void>(
+  // Pushed first, then recorded: the decision is only stored once the
+  // explanation is really on screen, so a push that fails cannot permanently
+  // suppress it on an installation that never got to see it.
+  final shown = showModalBottomSheet<void>(
     context: context,
     isDismissible: true,
     showDragHandle: true,
     builder: (context) => const _NotificationOnboardingSheet(),
   );
+  // Recorded the moment it appears: whatever the user does next (enable,
+  // decline, or simply swipe it away) PokéPod never shows it again.
+  ref.read(notificationsPrefsProvider.notifier).markAsked();
+  return shown;
 }
 
 class _NotificationOnboardingSheet extends ConsumerWidget {
@@ -27,7 +31,13 @@ class _NotificationOnboardingSheet extends ConsumerWidget {
 
   Future<void> _enable(BuildContext context, WidgetRef ref) async {
     final service = ref.read(notificationServiceProvider);
-    final granted = await service.requestPermission();
+    // Read the current status first: when notifications are already allowed
+    // there is nothing to ask, so the system dialog never reappears. Only an
+    // outstanding permission reaches Android 13's POST_NOTIFICATIONS prompt,
+    // and on Android 12 and older [requestPermission] falls straight back to
+    // the same reading instead of showing a dialog that does not exist there.
+    final alreadyAllowed = await service.notificationsEnabled();
+    final granted = alreadyAllowed || await service.requestPermission();
     // The in-app preference follows the real answer; if permission was
     // denied, Settings will show the blocked state and how to change it.
     ref.read(notificationsPrefsProvider.notifier).setEnabled(granted);

@@ -458,6 +458,33 @@ void main() {
       );
       expect(sound.preloaded, containsAll([Sfx.game, Sfx.correct, Sfx.error]));
     });
+
+    testWidgets('with sound effects off the splash stays silent and the app '
+        'still opens', (tester) async {
+      final sound = FakeSoundBackend(autoComplete: false);
+      await pumpApp(
+        tester,
+        splash: const Duration(milliseconds: 300),
+        soundBackend: sound,
+        prefsValues: {SoundEffectsNotifier.storageKey: false},
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        sound.playedToCompletion,
+        isEmpty,
+        reason:
+            'the startup sound is requested through the same service, so '
+            'the preference stops it',
+      );
+      expect(sound.played, isEmpty);
+      expect(
+        find.byType(NavigationBar),
+        findsOneWidget,
+        reason: 'and nothing waits on audio that will never come',
+      );
+    });
   });
 
   group("Who's That Pokémon? entry sound", () {
@@ -500,6 +527,41 @@ void main() {
       expect(sound.stopped, [
         Sfx.game,
       ], reason: 'no stop for a sound that already ended');
+    });
+
+    testWidgets('with sound effects off, entering the daily challenge is '
+        'silent', (tester) async {
+      final sound = FakeSoundBackend();
+      await pumpApp(
+        tester,
+        soundBackend: sound,
+        prefsValues: {SoundEffectsNotifier.storageKey: false},
+      );
+      await settle(tester);
+
+      // Captured while Discover is still the top route: the shell is offstage
+      // underneath a pushed page, so it cannot be reached from there.
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('Who\'s That Pokémon?')),
+      );
+
+      await tester.tap(find.text('Who\'s That Pokémon?'));
+      await settle(tester);
+
+      expect(
+        sound.played,
+        isEmpty,
+        reason: 'the screen opens, it is simply quiet',
+      );
+
+      // Switching back on restores it without restarting the app.
+      container.read(soundEffectsPrefsProvider.notifier).setEnabled(true);
+      await tester.pageBack();
+      await settle(tester);
+      await tester.tap(find.text('Who\'s That Pokémon?'));
+      await settle(tester);
+
+      expect(sound.played, [Sfx.game], reason: 'and the effect returns');
     });
   });
 }

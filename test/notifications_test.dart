@@ -656,7 +656,12 @@ void main() {
       bool answered = false,
       bool hasProgress = false,
     }) async {
-      final fake = FakeScheduler()..permissionGranted = granted;
+      // A genuinely new install has never been granted anything, and the store
+      // installed below says notifications are off: the fake's OS answer has to
+      // agree with it, so the sheet faces an outstanding permission.
+      final fake = FakeScheduler()
+        ..permissionGranted = granted
+        ..enabled = false;
       final preferences = await mockPrefs({
         if (hasProgress) 'mystery.v1': '{"v":2,"history":{}}',
         'notifications.v1': jsonEncode({

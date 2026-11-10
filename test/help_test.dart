@@ -62,6 +62,55 @@ void main() {
       },
     );
 
+    test('the Settings section documents the real Sound Effects toggle', () {
+      final settings = topic('settings');
+      final text = textOf(settings);
+      expect(
+        text,
+        contains('Sound Effects'),
+        reason: 'the toggle really exists on the Settings screen',
+      );
+      // The short entry the guide promises, in one piece.
+      expect(
+        text,
+        contains(
+          'You can enable or disable in-app sound effects using the Sound '
+          'Effects toggle in Settings. Your preference is saved automatically.',
+        ),
+      );
+      // Immediately below Notifications and above Backup, Progress & Restore.
+      final items = [
+        for (final block in settings.blocks)
+          if (block.kind == HelpBlockKind.bullets) ...block.items,
+      ];
+      final index = items.indexWhere(
+        (item) => item.startsWith('Sound Effects'),
+      );
+      expect(index, greaterThan(0), reason: 'it is an entry of its own');
+      expect(
+        index,
+        lessThan(items.length - 1),
+        reason: 'it is not the last entry',
+      );
+      expect(items[index - 1], startsWith('Notifications'));
+      expect(
+        items[index + 1],
+        startsWith('Backup progress and Restore from backup'),
+      );
+      // And that the choice survives a restart.
+      expect(text.toLowerCase(), contains('saved automatically'));
+    });
+
+    test('no help section still denies that the sound setting exists', () {
+      for (final id in ['settings', 'troubleshooting', 'welcome']) {
+        expect(
+          textOf(topic(id)).toLowerCase(),
+          isNot(contains('no in-app sound setting')),
+          reason: id,
+        );
+      }
+    });
+
     test('the guide never claims features that do not exist', () {
       final all = kHelpTopics.map(textOf).join(' ').toLowerCase();
       for (final phrase in [
@@ -99,7 +148,10 @@ void main() {
         'Accent Color': 'Settings',
         'Theme Mode': 'Settings',
         'Notifications': 'Streak reminders and notifications',
-        'Sound Effects': 'Troubleshooting and FAQ',
+        // Sound Effects is now documented in its own right under Settings, so
+        // that is where the query should land; Troubleshooting still holds the
+        // "what plays and when" answer for it.
+        'Sound Effects': 'Settings',
         'Backup and Restore': 'Backing up and restoring',
         "Who's That Pokémon?": "Who's That Pokémon?",
         'Achievements': 'Achievements',

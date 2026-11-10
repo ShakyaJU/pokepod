@@ -429,6 +429,8 @@ const List<HelpTopic> kHelpTopics = [
       'Notifications: the master switch for local reminders, the Who\'s That Pokémon? streak reminder, '
           'and a live reading of the Android permission with an "Open settings" shortcut when it is '
           'blocked. See "Streak reminders and notifications".',
+      'Sound Effects: You can enable or disable in-app sound effects using the Sound Effects toggle '
+          'in Settings. Your preference is saved automatically.',
       'Backup progress and Restore from backup: copy your progress as text and bring it back later. See "Backing up and restoring your progress".',
       'Connection to PokéAPI: shows whether the last request succeeded. It is information, not a switch.',
     ]),
@@ -466,7 +468,7 @@ const List<HelpTopic> kHelpTopics = [
           'Android permission have to be on, and only an unplayed day with an active streak is worth reminding about.',
       'Sound effects: PokéPod plays a short sound when it opens, music during the Who\'s That '
           'Pokémon? challenge, and a correct or wrong sound after every guess. They follow your '
-          'device\'s media volume (there is no in-app sound setting).',
+          'device\'s media volume, and Settings > Sound Effects is the switch that turns them off.',
     ]),
   ]),
   HelpTopic('sources', Icons.info_outline, 'About and data sources', [
