@@ -22,7 +22,13 @@
 <p><b>1,025 species · 9 generations · 20 achievements · 4 widget sizes · 396 tests</b></p>
 
 <p>
+  <a href="https://drive.google.com/file/d/1FX1KTglpklE0uzv8gGRtavpW9SLwUpl8/view?usp=sharing"><img src="https://img.shields.io/badge/Download%20the%20Android%20APK-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download the PokéPod Android APK"></a>
   <a href="https://drive.google.com/file/d/1mC15HkOd97j_yW7tOFx_2wqBNsXa5Kaf/view?usp=sharing"><img src="https://img.shields.io/badge/%E2%96%B6%20%20Watch%20the%20Full%20App%20Demo-02569B?style=for-the-badge" alt="Watch the full PokéPod app demo"></a>
+</p>
+
+<p><sub>Android only · The APK opens on Google Drive. It is installed outside the Play Store, so Android may ask you to allow installs from your browser or file manager.</sub></p>
+
+<p>
   <a href="#features"><img src="https://img.shields.io/badge/Explore%20the%20Features-2DD4A0?style=for-the-badge" alt="Explore the features"></a>
   <a href="#technical-architecture"><img src="https://img.shields.io/badge/Read%20the%20Architecture-455A64?style=for-the-badge" alt="Read the architecture"></a>
 </p>
@@ -78,13 +84,14 @@ Everything you create is stored **locally on your device**. There is no account 
 
 ## See it in action
 
-Every feature below has its own short animated preview. For the complete experience, watch the full walkthrough.
+Every feature below has its own short animated preview. For the complete experience, watch the full walkthrough or install the app and try it yourself.
 
 <p align="center">
+  <a href="https://drive.google.com/file/d/1FX1KTglpklE0uzv8gGRtavpW9SLwUpl8/view?usp=sharing"><img src="https://img.shields.io/badge/Download%20the%20Android%20APK-34A853?style=for-the-badge&logo=android&logoColor=white" alt="Download the PokéPod Android APK"></a>
   <a href="https://drive.google.com/file/d/1mC15HkOd97j_yW7tOFx_2wqBNsXa5Kaf/view?usp=sharing"><img src="https://img.shields.io/badge/%E2%96%B6%20%20Watch%20the%20Complete%20PokéPod%20Walkthrough-02569B?style=for-the-badge" alt="Watch the complete PokéPod walkthrough"></a>
 </p>
 
-<p align="center"><sub>The walkthrough opens on Google Drive in a new page. It is a link, not an inline player.</sub></p>
+<p align="center"><sub>The walkthrough and the APK both open on Google Drive in a new page. The walkthrough is a link, not an inline player.</sub></p>
 
 ---
 
@@ -645,11 +652,23 @@ PokéPod continues to evolve with new features, usability enhancements, and impr
 - Supports combined type-effectiveness calculations for dual-type Pokémon.
 - Integrated directly into Pokémon profiles, below Moves and above Evolution.
 
+<table>
+  <tr>
+    <td width="56%" valign="middle">
+
 ### 🚀 First-Launch Onboarding
 - Introduced a guided onboarding experience for new users.
 - Provides an interactive introduction to PokéPod's main features, including Discover, Pokédex, Lab, Collection, and Daily Challenge.
 - Includes step-by-step navigation, progress indicators, and skip functionality.
 - Saves onboarding completion to prevent repeatedly displaying the introduction.
+
+</td>
+    <td width="44%" align="center" valign="middle">
+      <img src="pokepod-gifs/onboarding_intro.gif" alt="First-launch onboarding walkthrough of PokéPod's main features" width="260"><br>
+      <sub><b>First-launch onboarding</b> · a guided tour of the app</sub>
+    </td>
+  </tr>
+</table>
 
 ### 🎮 Who's That Pokémon? – UI Improvements
 - Improved the daily challenge gameplay layout.
